@@ -11,7 +11,7 @@ var SHEET_NAME = 'CBM_DATA';
 
 var COLS = ['id','ts','pic','wh','mode','zone','rack','tipe','isi',
             'p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm',
-            'footM2','shelfM2','note'];
+            'footM2','shelfM2','note','locator'];
 
 function getSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -19,11 +19,23 @@ function getSheet_() {
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
     sh.appendRow(COLS);
-    sh.getRange(1, 1, 1, COLS.length).setFontWeight('bold')
-      .setBackground('#0E2A47').setFontColor('#FFFFFF');
+    styleHeader_(sh);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  // Perbaiki header kalau ada kolom baru (kolom baru selalu DITAMBAH di akhir COLS,
+  // jadi data lama tetap sejajar dan tidak perlu dimigrasi).
+  if (sh.getLastColumn() < COLS.length) {
+    sh.getRange(1, 1, 1, COLS.length).setValues([COLS]);
+    styleHeader_(sh);
     sh.setFrozenRows(1);
   }
   return sh;
+}
+
+function styleHeader_(sh) {
+  sh.getRange(1, 1, 1, COLS.length).setFontWeight('bold')
+    .setBackground('#0E2A47').setFontColor('#FFFFFF');
 }
 
 function json_(obj) {
