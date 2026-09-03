@@ -929,28 +929,57 @@ function saveCfg(){
 }
 
 /* ---------------- sync ---------------- */
+function chunkArr(a,n){ var o=[]; for(var i=0;i<a.length;i+=n) o.push(a.slice(i,i+n)); return o; }
+
+/* Kirim data ke Sheets.
+   PENTING: Apps Script menjawab POST dengan redirect 302 ke script.googleusercontent.com,
+   dan respons setelah redirect itu sering TIDAK membawa header CORS. Akibatnya data
+   BERHASIL tertulis di Sheet tapi fetch() melempar error, sehingga entry tetap dianggap
+   "pending" dan user melihat "Gagal sync" padahal sukses.
+   Solusi: kirim pakai mode:'no-cors' (fire-and-forget), lalu VERIFIKASI dengan GET
+   ?action=list yang memang lolos CORS. Yang dipercaya adalah isi Sheet, bukan respons POST. */
 function pushAll(){
   if(!cfg.url){ toast('URL Apps Script belum diisi (tab Setup)',true); return; }
   var pending=entries.filter(function(e){ return !e.synced; });
   if(!pending.length){ toast('Semua sudah tersinkron'); return; }
+  var parts=chunkArr(pending,150), i=0;
   toast('Mengirim '+pending.length+' entry...');
-  fetch(cfg.url,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'}, /* hindari CORS preflight */
-    body:JSON.stringify({action:'append', rows:pending})
-  }).then(function(r){ return r.json(); }).then(function(res){
-    if(res && res.ok){
-      var ids={}; pending.forEach(function(e){ ids[e.id]=1; });
-      entries.forEach(function(e){ if(ids[e.id]) e.synced=true; });
-      lsSet(LS_ENTRIES,entries); renderAll(); toast('✓ '+pending.length+' entry tersinkron');
-    } else { toast('Gagal: '+((res&&res.error)||'respons tidak dikenal'),true); }
-  }).catch(function(err){ toast('Gagal sync — cek koneksi/URL',true); console.error(err); });
+  function sendNext(){
+    if(i>=parts.length){ setTimeout(verifySync,700); return; }
+    var body=JSON.stringify({action:'append', rows:parts[i]}); i++;
+    fetch(cfg.url,{
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:body
+    }).then(sendNext, sendNext);
+  }
+  sendNext();
+}
+
+/* Tandai synced HANYA untuk entry yang id-nya benar-benar sudah ada di Sheet. */
+function verifySync(){
+  return fetch(cfg.url+'?action=list&t='+Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(!res || !res.ok) throw new Error('respons tidak dikenal');
+      var ids={}; (res.rows||[]).forEach(function(r){ ids[String(r.id)]=1; });
+      var ok=0;
+      entries.forEach(function(e){ if(!e.synced && ids[String(e.id)]){ e.synced=true; ok++; } });
+      lsSet(LS_ENTRIES,entries); renderAll();
+      var left=entries.filter(function(e){ return !e.synced; }).length;
+      if(left===0) toast('✓ '+ok+' entry terverifikasi di Sheets');
+      else toast('⚠ '+ok+' masuk, '+left+' belum — tekan Sync lagi',true);
+    })
+    .catch(function(err){
+      toast('Terkirim, tapi verifikasi gagal — cek internet lalu Sync lagi',true);
+      console.error(err);
+    });
 }
 
 function pullAll(){
   if(!cfg.url){ toast('URL Apps Script belum diisi',true); return; }
   toast('Menarik data tim...');
-  fetch(cfg.url+'?action=list').then(function(r){ return r.json(); }).then(function(res){
+  fetch(cfg.url+'?action=list&t='+Date.now()).then(function(r){ return r.json(); }).then(function(res){
     if(!res || !res.ok){ toast('Gagal menarik data',true); return; }
     var have={}; entries.forEach(function(e){ have[e.id]=1; });
     var added=0;
