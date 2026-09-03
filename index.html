@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0E2A47">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Warehouse PMT - CBM Calculation</title>
+<style>
+:root{
+  --navy-900:#0B1F35; --navy-800:#0E2A47; --navy-700:#153A5E; --navy-600:#1E4C79;
+  --gold-500:#C9A227; --gold-400:#DDB94A; --gold-100:#F6EAC4;
+  --canvas:#E8ECF1; --card:#FBFCFD; --line:#D3DBE4;
+  --ink:#12233A; --ink-2:#4A5C72; --ink-3:#7A8CA3;
+  --ok:#1E7A5A; --warn:#B5761A; --bad:#A32F2B;
+  --r:14px; --appw:430px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--canvas); color:var(--ink); font-size:15px; line-height:1.45;
+  padding-bottom:78px;
+}
+body.inputpage{padding-bottom:152px}
+/* ---------- header ---------- */
+header{
+  position:sticky; top:0; z-index:40;
+  background:linear-gradient(135deg,var(--navy-900),var(--navy-700));
+  color:#fff; padding:12px 16px calc(12px + env(safe-area-inset-top,0)) 16px;
+  padding-top:calc(12px + env(safe-area-inset-top,0));
+  box-shadow:0 2px 10px rgba(11,31,53,.25);
+  transition:padding .18s;
+}
+header.slim{padding-bottom:8px}
+header.slim .hero{margin-top:6px}
+header.slim .hero .num{font-size:20px}
+header.slim .hero .lbl{font-size:9.5px;margin-bottom:1px}
+header .brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+header h1{margin:0;font-size:13px;font-weight:800;letter-spacing:.4px;line-height:1.25}
+header .sub{font-size:11px;color:#A9C0D8;margin-top:1px}
+.badge{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:rgba(201,162,39,.18);color:var(--gold-400);border:1px solid rgba(201,162,39,.45);white-space:nowrap}
+.badge.off{background:rgba(163,47,43,.2);color:#F3B0AD;border-color:rgba(243,176,173,.4)}
+.hero{margin-top:11px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.hero .num{font-size:31px;font-weight:800;color:var(--gold-400);line-height:1;letter-spacing:-.5px}
+.hero .lbl{font-size:11px;color:#A9C0D8;margin-bottom:3px}
+/* ---------- layout ---------- */
+main{padding:14px 12px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--navy-700);
+  display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:4px;height:14px;border-radius:2px;background:var(--gold-500)}
+.muted{color:var(--ink-3);font-size:12px}
+.hint{background:var(--gold-100);border-left:3px solid var(--gold-500);border-radius:8px;padding:9px 11px;font-size:12px;color:#4A3B08;margin-bottom:12px}
+.hint b{color:#3A2E06}
+/* ---------- forms ---------- */
+label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin:0 0 5px;text-transform:uppercase;letter-spacing:.3px}
+input,select,textarea{
+  width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
+  font-size:16px;font-family:inherit;background:#fff;color:var(--ink);
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy-600);box-shadow:0 0 0 3px rgba(30,76,121,.12)}
+input[readonly]{background:#EFF2F6;color:var(--ink-2)}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+.fg{margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  padding:9px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;
+  font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;user-select:none;
+}
+.chip.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
+.chip.gold.on{background:var(--gold-500);border-color:var(--gold-500);color:#20180A}
+/* ---------- mode tabs ---------- */
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.mode{
+  background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:9px 3px;
+  text-align:center;cursor:pointer;
+}
+.mode .ic{font-size:19px;line-height:1.1}
+.mode .tx{font-size:9.5px;font-weight:800;margin-top:3px;color:var(--ink-2);letter-spacing:.2px}
+.mode.on{background:var(--navy-800);border-color:var(--navy-800)}
+.mode.on .tx{color:var(--gold-400)}
+/* ---------- bin catalog buttons ---------- */
+.cats{display:grid;grid-template-columns:1fr;gap:8px}
+.cat{
+  display:flex;align-items:center;gap:9px;padding:10px;border:1.5px solid var(--line);
+  border-radius:11px;background:#fff;cursor:pointer;text-align:left;
+}
+.cat.on{border-color:var(--navy-800);background:#F0F5FA;box-shadow:0 0 0 2px rgba(14,42,71,.12)}
+.sw{width:28px;height:28px;border-radius:8px;flex:0 0 auto;background:var(--navy-700);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.cat .nm{font-size:12.5px;font-weight:700;line-height:1.15}
+.cat .dm{font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.cat .warnflag{font-size:10px;color:var(--bad);font-weight:700}
+/* ---------- buttons ---------- */
+button{font-family:inherit}
+.btn{
+  display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;
+  font-weight:800;cursor:pointer;letter-spacing:.3px;
+}
+.btn-primary{background:var(--navy-800);color:#fff}
+.btn-gold{background:var(--gold-500);color:#20180A}
+.btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink-2)}
+.btn-sm{padding:9px 12px;font-size:12.5px;width:auto;border-radius:9px}
+.btn:active{transform:translateY(1px)}
+.btnrow{display:flex;gap:8px}
+.btnrow>*{flex:1}
+/* ---------- live calc ---------- */
+.calc{
+  background:linear-gradient(135deg,var(--navy-800),var(--navy-600));color:#fff;
+  border-radius:12px;padding:12px 14px;margin:12px 0;
+}
+.calc .big{font-size:26px;font-weight:800;color:var(--gold-400);line-height:1.1}
+.calc .sm{font-size:11px;color:#A9C0D8}
+.calc .split{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+/* ---------- table ---------- */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:12px;min-width:520px}
+th{background:var(--navy-800);color:#fff;padding:8px 9px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid #EDF1F5;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.2px}
+.t-BIN{background:#DCE9F6;color:#12456F}.t-NOPACK{background:#E7E1F5;color:#453074}
+.t-KARTON{background:#F6EAC4;color:#6B5309}
+.t-RAK{background:#E6E9ED;color:#33465C}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.dot.s{background:var(--ok)}.dot.u{background:var(--warn)}
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+.stat .v{font-size:21px;font-weight:800;color:var(--navy-800);line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:10.5px;color:var(--ink-3);margin-top:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+.stat.accent{background:linear-gradient(135deg,var(--navy-800),var(--navy-600));border-color:var(--navy-800)}
+.stat.accent .v{color:var(--gold-400)}.stat.accent .k{color:#A9C0D8}
+/* ---------- bars ---------- */
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
+.bar .top .n{font-weight:600;color:var(--ink)}
+.bar .top .v{font-variant-numeric:tabular-nums;color:var(--ink-2);font-weight:700}
+.track{height:9px;background:#DFE5EC;border-radius:5px;overflow:hidden}
+.fill{height:100%;background:var(--navy-600);border-radius:0 4px 4px 0}
+.fill.gold{background:var(--gold-500)}
+/* ---------- sticky action bar ---------- */
+.actionbar{
+  position:fixed; left:0; right:0; z-index:45; display:none;
+  bottom:calc(var(--kb,0px) + var(--navh,58px));
+  background:linear-gradient(135deg,var(--navy-800),var(--navy-600));
+  border-top:2px solid var(--gold-500);
+  padding:9px 12px 10px; box-shadow:0 -4px 16px rgba(11,31,53,.28);
+}
+body.inputpage .actionbar{display:block}
+body.kb .actionbar{bottom:var(--kb,0px)}
+body.kb nav{display:none}
+.abtop{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;color:#fff}
+.abtop .n{font-size:23px;font-weight:800;color:var(--gold-400);line-height:1;font-variant-numeric:tabular-nums}
+.abtop .u{font-size:12px;color:#A9C0D8}
+.abtop .d{margin-left:auto;font-size:10.5px;color:#A9C0D8;text-align:right;line-height:1.25;
+  max-width:56%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.abbtn{display:flex;gap:8px}
+.abbtn button{flex:1;padding:13px 8px;border:none;border-radius:11px;font-size:14px;font-weight:800;letter-spacing:.2px}
+/* ---------- nav ---------- */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;display:grid;grid-template-columns:repeat(4,1fr);
+  background:var(--navy-900);padding:7px 4px calc(7px + env(safe-area-inset-bottom,0));
+  box-shadow:0 -2px 12px rgba(11,31,53,.3);
+}
+nav button{background:none;border:none;color:#7E97B2;padding:5px 2px;cursor:pointer;border-radius:9px}
+nav button .ic{font-size:18px;display:block;line-height:1.2}
+nav button .tx{font-size:10px;font-weight:700;margin-top:1px;display:block}
+nav button.on{color:var(--gold-400);background:rgba(255,255,255,.06)}
+/* ---------- tampilan desktop: bingkai selebar HP ---------- */
+@media (min-width:620px){
+  body{background:#16283C}
+  .shell{
+    max-width:var(--appw); margin:0 auto; min-height:100vh;
+    background:var(--canvas); box-shadow:0 0 48px rgba(0,0,0,.45);
+  }
+  .actionbar, nav{ left:50%; transform:translateX(-50%); width:100%; max-width:var(--appw) }
+  .modes{grid-template-columns:repeat(4,1fr)}
+}
+/* ---------- misc ---------- */
+.page{display:none}.page.on{display:block}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:99;
+  background:var(--navy-900);color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;
+  font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s;
+  max-width:88vw;text-align:center;
+}
+.toast.on{opacity:1}
+.toast.err{background:var(--bad)}
+.divline{height:1px;background:var(--line);margin:14px 0}
+details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy-700);padding:4px 0}
+.small{font-size:11.5px}
+.right{text-align:right}
+.mb0{margin-bottom:0}
+.mt10{margin-top:10px}
+.warnbox{background:#FBE9E8;border-left:3px solid var(--bad);border-radius:8px;padding:9px 11px;font-size:12px;color:#6B1F1C;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<header>
+  <div class="brand">
+    <div>
+      <h1>WAREHOUSE PMT<br>CBM CALCULATION</h1>
+      <div class="sub" id="hdrSub">Warehouse Spare Parts — MODENA</div>
+    </div>
+    <span class="badge" id="syncBadge">•</span>
+  </div>
+  <div class="hero">
+    <div>
+      <div class="lbl">TOTAL CBM BARANG (OCCUPIED)</div>
+      <div class="num"><span id="heroCbm">0.000</span> <span style="font-size:15px">m³</span></div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="lbl">ENTRY</div>
+      <div class="num" style="font-size:20px"><span id="heroN">0</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ INPUT ============ -->
+<section class="page on" id="pgInput">
+
+  <div class="modes" id="modeTabs">
+    <div class="mode on" data-mode="BIN"><div class="ic">🧺</div><div class="tx">BIN</div></div>
+    <div class="mode" data-mode="NOPACK"><div class="ic">🪟</div><div class="tx">NO PACK</div></div>
+    <div class="mode" data-mode="KARTON"><div class="ic">📦</div><div class="tx">KARTON</div></div>
+    <div class="mode" data-mode="RAK"><div class="ic">🏗️</div><div class="tx">RAK</div></div>
+  </div>
+
+  <div class="card" id="locCard">
+    <h2 style="cursor:pointer" onclick="toggleLoc()">Lokasi <span id="locChev" style="margin-left:auto;font-size:11px;color:var(--ink-3)">tutup ▲</span></h2>
+    <div id="locSummary" style="display:none" onclick="toggleLoc()">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="chip on" style="pointer-events:none" id="locChip">—</span>
+        <span class="muted">ketuk untuk ubah</span>
+      </div>
+    </div>
+    <div id="locFields">
+    <div class="row mb0">
+      <div><label>Zona / Area <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fZone" list="zoneList" placeholder="A / B / C / D / FOC ..."></div>
+      <div><label>Rak <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fRack" placeholder="A1, D6, ..."></div>
+    </div>
+    <datalist id="zoneList"></datalist>
+    <p class="muted mt10 mb0">Zona &amp; rak tetap tersimpan setelah Simpan, jadi tidak perlu diketik ulang tiap entry.</p>
+    </div>
+  </div>
+
+  <!-- BIN -->
+  <div class="card" id="boxBin">
+    <h2>Ukuran Bin</h2>
+    <div class="warnbox" id="calWarn" style="display:none">
+      <b>Belum dikalibrasi.</b> Ukur 1 sampel fisik tiap ukuran bin lalu update dimensinya di tab <b>Setup</b>. Angka default hanya perkiraan awal.
+    </div>
+    <div class="cats" id="catList"></div>
+    <div id="customDims" style="display:none;margin-top:12px">
+      <label>Ukuran dalam bin (cm) — isi manual</label>
+      <div class="grid3 fg">
+        <div><input id="cP" type="number" inputmode="decimal" placeholder="P"></div>
+        <div><input id="cL" type="number" inputmode="decimal" placeholder="L"></div>
+        <div><input id="cT" type="number" inputmode="decimal" placeholder="T"></div>
+      </div>
+      <div class="fg mb0"><label>Keterangan bin (opsional)</label><input id="cNama" placeholder="mis. bin panjang, tray dangkal"></div>
+    </div>
+  </div>
+
+  <!-- NO PACKAGE -->
+  <div class="card" id="boxSlot" style="display:none">
+    <h2>No Package — Dimensi Slot / Kompartemen (cm)</h2>
+    <p class="muted" style="margin-top:-4px">Untuk barang <b>tanpa kemasan</b> yang ditaruh langsung di rak: kaca, door panel, sheet metal, grill. Ukur <b>ruang sekatnya</b> (bukan per lembar), lalu isi % keterisian.</p>
+    <div class="grid3 fg">
+      <div><label>Panjang</label><input id="sP" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Lebar</label><input id="sL" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Tinggi</label><input id="sT" type="number" inputmode="decimal" placeholder="cm"></div>
+    </div>
+    <div class="fg mb0"><label>Jenis barang</label>
+      <select id="sIsi">
+        <option>Kaca / Glass panel</option><option>Door panel</option><option>Sheet metal / Body part</option>
+        <option>Rak kawat / Grill</option><option>Campuran</option><option>Lainnya</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- KARTON -->
+  <div class="card" id="boxKarton" style="display:none">
+    <h2>Karton / Tumpukan — Dimensi (cm)</h2>
+    <p class="muted" style="margin-top:-4px">Box: ukur dimensi <b>luar</b> 1 box, lalu isi jumlah box identik.<br>Tumpukan lantai / pallet: ukur <b>alas × tinggi</b> tumpukan, qty = 1, lalu pakai % sebagai <b>kepadatan</b>.</p>
+    <div class="grid3 fg">
+      <div><label>Panjang</label><input id="kP" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Lebar</label><input id="kL" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Tinggi</label><input id="kT" type="number" inputmode="decimal" placeholder="cm"></div>
+    </div>
+    <div class="fg mb0"><label>Isi</label>
+      <select id="kIsi">
+        <option>Karton campuran</option><option>Kaca / Panel</option><option>Unit besar / Appliance</option>
+        <option>Material packing</option><option>Barang FOC</option><option>Barang Receiving</option><option>Lainnya</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- RAK -->
+  <div class="card" id="boxRak" style="display:none">
+    <h2>Data Rak (Kapasitas)</h2>
+    <p class="muted" style="margin-top:-4px">Mode ini <b>tidak menambah CBM barang</b>. Dipakai untuk hitung kapasitas & footprint rak eksisting.</p>
+    <div class="fg"><label>Tipe rak</label>
+      <select id="rTipe">
+        <option>Rak besi siku lubang (light duty)</option>
+        <option>Rak heavy duty / pallet racking</option>
+        <option>Rak sekat kayu (glass area)</option>
+        <option>Rak louvre bin (bin miring)</option>
+        <option>Rak kawat / mezzanine</option>
+        <option>Lainnya</option>
+      </select>
+    </div>
+    <div class="grid3 fg">
+      <div><label>Panjang</label><input id="rP" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Lebar</label><input id="rL" type="number" inputmode="decimal" placeholder="cm"></div>
+      <div><label>Tinggi</label><input id="rT" type="number" inputmode="decimal" placeholder="cm"></div>
+    </div>
+    <div class="fg mb0"><label>Jumlah level / shaf per rak</label><input id="rLv" type="number" inputmode="numeric" value="5"></div>
+  </div>
+
+  <!-- QTY + FILL -->
+  <div class="card">
+    <h2><span id="qtyHead">Jumlah &amp; % Isi</span></h2>
+    <div class="fg">
+      <label id="qtyLbl">Jumlah bin identik (qty)</label>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" style="flex:0 0 52px" onclick="bumpQty(-1)">−</button>
+        <input id="fQty" type="number" inputmode="numeric" value="1" style="flex:1;text-align:center;font-weight:800;font-size:19px">
+        <button class="btn btn-ghost btn-sm" style="flex:0 0 52px" onclick="bumpQty(1)">+</button>
+      </div>
+    </div>
+    <div id="fillWrap">
+      <label id="fillLbl">Persentase isi</label>
+      <div class="chips" id="fillChips"></div>
+      <div class="fg mt10 mb0"><input id="fFill" type="number" inputmode="decimal" value="100" placeholder="% custom"></div>
+    </div>
+    <div class="fg mt10 mb0"><label>Catatan (opsional)</label><input id="fNote" placeholder="mis. bin menonjol keluar, barang rusak"></div>
+  </div>
+
+  <div class="card">
+    <h2>5 Entry Terakhir</h2>
+    <div id="recentList"><p class="muted mb0">Belum ada entry.</p></div>
+  </div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section class="page" id="pgData">
+  <div class="card">
+    <h2>Filter</h2>
+    <div class="row fg mb0">
+      <div><label>Mode</label><select id="dfMode"><option value="">Semua</option><option>BIN</option><option>NOPACK</option><option>KARTON</option><option>RAK</option></select></div>
+      <div><label>Zona</label><input id="dfZone" placeholder="semua"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Data Entry (<span id="dCount">0</span>)</h2>
+    <div class="tblwrap"><table id="dTable"><thead><tr>
+      <th>#</th><th>Mode</th><th>Lokasi</th><th>Detail</th><th class="num">Qty</th><th class="num">%</th>
+      <th class="num">Gross m³</th><th class="num">Occ m³</th><th>PIC</th><th></th>
+    </tr></thead><tbody id="dBody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Sinkronisasi &amp; Export</h2>
+    <p class="muted" style="margin-top:-4px">Belum tersinkron: <b id="unsyncN">0</b> entry</p>
+    <div class="btnrow" style="margin-bottom:8px">
+      <button class="btn btn-primary btn-sm" onclick="pushAll()">⬆ Sync ke Sheets</button>
+      <button class="btn btn-ghost btn-sm" onclick="pullAll()">⬇ Tarik data tim</button>
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="shareWa()">💬 WhatsApp</button>
+    </div>
+    <div class="divline"></div>
+    <details><summary>Zona bahaya</summary>
+      <button class="btn btn-ghost btn-sm mt10" style="width:100%;color:var(--bad);border-color:#E8BEBC" onclick="wipeLocal()">Hapus semua data di HP ini</button>
+    </details>
+  </div>
+</section>
+
+<!-- ============ RINGKASAN ============ -->
+<section class="page" id="pgSum">
+  <div class="card">
+    <h2>Angka Kunci</h2>
+    <div class="stats">
+      <div class="stat accent"><div class="v" id="kOcc">0</div><div class="k">CBM Barang (Occupied)</div></div>
+      <div class="stat accent"><div class="v" id="kGross">0</div><div class="k">CBM Ruang Terpakai (Gross)</div></div>
+      <div class="stat"><div class="v" id="kUtil">0%</div><div class="k">Utilisasi Bin</div></div>
+      <div class="stat"><div class="v" id="kRakCbm">0</div><div class="k">CBM Envelope Rak</div></div>
+    </div>
+    <div class="divline"></div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="kBin">0</div><div class="k">Bin</div></div>
+      <div class="stat"><div class="v" id="kKarton">0</div><div class="k">Karton / Tumpukan</div></div>
+      <div class="stat"><div class="v" id="kSlot">0</div><div class="k">Item No Package</div></div>
+      <div class="stat"><div class="v" id="kRak">0</div><div class="k">Rak</div></div>
+      <div class="stat"><div class="v" id="kFoot">0</div><div class="k">Footprint Rak (m²)</div></div>
+      <div class="stat"><div class="v" id="kShelf">0</div><div class="k">Luas Shelf (m²)</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>CBM Occupied per Zona</h2>
+    <div class="bars" id="barZone"><p class="muted mb0">Belum ada data.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>CBM Occupied per Mode</h2>
+    <div class="bars" id="barMode"><p class="muted mb0">Belum ada data.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>Rekap per Ukuran Bin</h2>
+    <div class="tblwrap"><table><thead><tr><th>Ukuran Bin</th><th class="num">Qty</th><th class="num">Gross m³</th><th class="num">Occ m³</th><th class="num">Util</th></tr></thead><tbody id="catBody"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Simulasi Gudang Baru</h2>
+    <p class="muted" style="margin-top:-4px">Hitung kebutuhan ruang gudang baru dari CBM aktual + asumsi perencanaan.</p>
+    <div class="grid2 fg">
+      <div><label>Growth stok (%)</label><input id="simGrow" type="number" value="20" inputmode="decimal"></div>
+      <div><label>Target isi bin (%)</label><input id="simFill" type="number" value="80" inputmode="decimal"></div>
+    </div>
+    <div class="grid2 fg">
+      <div><label>Densitas rak (%)</label><input id="simDens" type="number" value="55" inputmode="decimal"></div>
+      <div><label>Tinggi rak rencana (m)</label><input id="simH" type="number" value="2.5" inputmode="decimal"></div>
+    </div>
+    <div class="fg"><label>Faktor gang &amp; area non-rak (×)</label><input id="simAisle" type="number" value="1.8" inputmode="decimal"></div>
+    <div class="calc" style="margin-bottom:0">
+      <div class="split">
+        <div><div class="sm">Estimasi luas lantai gudang baru</div><div class="big"><span id="simArea">0</span> m²</div></div>
+        <div class="right"><div class="sm">Volume rak</div><div style="font-weight:700;font-size:15px"><span id="simVol">0</span> m³</div></div>
+      </div>
+      <div class="sm mt10" id="simDetail">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SETUP ============ -->
+<section class="page" id="pgSetup">
+  <div class="card">
+    <h2>Identitas &amp; Koneksi</h2>
+    <div class="fg"><label>Nama PIC</label><input id="cfgPic" placeholder="Nama Anda"></div>
+    <div class="fg"><label>Gudang</label><input id="cfgWh" placeholder="mis. Jatake / HQ"></div>
+    <div class="fg mb0"><label>URL Apps Script Web App</label><input id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <button class="btn btn-primary mt10" onclick="saveCfg()">Simpan Setelan</button>
+  </div>
+
+  <div class="card">
+    <h2>Katalog Ukuran Bin</h2>
+    <div class="hint">Bin dibedakan <b>hanya berdasarkan ukuran</b> (Kecil / Sedang / Besar), bukan warna. Dimensi di bawah adalah <b>estimasi awal</b> — wajib ukur 1 sampel fisik tiap ukuran (dimensi <b>dalam</b>, cm) lalu tandai <b>Terkalibrasi</b>. Bin yang tidak masuk 3 ukuran ini pakai tombol <b>Bin Custom</b> di layar input.</div>
+    <div id="catEdit"></div>
+    <button class="btn btn-ghost mt10" onclick="addCat()">+ Tambah Ukuran Bin</button>
+  </div>
+
+  <div class="card">
+    <h2>Cara Pakai Singkat</h2>
+    <ol class="small" style="padding-left:18px;margin:0;color:var(--ink-2)">
+      <li>Isi <b>Nama PIC</b> &amp; <b>URL Apps Script</b> sekali di awal.</li>
+      <li>Kalibrasi katalog ukuran bin (ukur fisik 1 sampel Kecil / Sedang / Besar).</li>
+      <li>Survey rak dulu pakai mode <b>RAK</b> (1 entry per rak identik) — ini basis kapasitas.</li>
+      <li>Sapu isi rak pakai mode <b>BIN</b> / <b>NO PACK</b> / <b>KARTON</b>. Bin ukuran tidak standar pakai <b>Bin Custom</b>.</li>
+      <li>Area lantai, FOC, Receiving pakai mode <b>KARTON</b> (ukur alas × tinggi tumpukan, % dipakai sebagai kepadatan).</li>
+      <li>Tekan <b>Sync</b> tiap selesai 1 zona (boleh offline dulu, sync belakangan).</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Aturan Anti Double-Count</h2>
+    <ul class="small" style="padding-left:18px;margin:0;color:var(--ink-2)">
+      <li>Bin di dalam rak dihitung mode <b>BIN</b> — <b>jangan</b> dihitung lagi sebagai tumpukan.</li>
+      <li>Karton yang berdiri sendiri di shelf dihitung <b>KARTON</b>; karton <b>di dalam</b> bin sudah masuk % isi bin.</li>
+      <li>Mode <b>RAK</b> murni kapasitas — tidak pernah masuk ke CBM barang.</li>
+      <li>1 slot kaca = 1 entry <b>NO PACK</b>. Lembaran di dalamnya tidak diukur satu-satu.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Tentang</h2>
+    <p class="small muted mb0">Warehouse PMT - CBM Calculation · v1.4<br>Parts Management — Customer Care Dept · MODENA<br>Survey kapasitas gudang spare parts sebelum relokasi.</p>
+  </div>
+</section>
+
+</main>
+</div><!-- /shell -->
+
+<div class="actionbar" id="actionBar">
+  <div class="abtop">
+    <span class="n" id="calcMain">0,0000</span><span class="u">m³ <span id="calcLbl">occupied</span></span>
+    <span class="d" id="calcDetail">—</span>
+  </div>
+  <div class="abbtn">
+    <button class="btn-gold" onclick="saveEntry(false)">SIMPAN</button>
+    <button class="btn-ghost" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.3)" onclick="saveEntry(true)">SIMPAN &amp; LANJUT</button>
+  </div>
+</div>
+
+<nav>
+  <button class="on" data-pg="pgInput"><span class="ic">✏️</span><span class="tx">Input</span></button>
+  <button data-pg="pgData"><span class="ic">📋</span><span class="tx">Data</span></button>
+  <button data-pg="pgSum"><span class="ic">📊</span><span class="tx">Ringkasan</span></button>
+  <button data-pg="pgSetup"><span class="ic">⚙️</span><span class="tx">Setup</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   PMT CBM COUNTER — MODENA Parts Management
+   Single-file. Offline-first (localStorage) + Google Sheets sync.
+   ============================================================ */
+
+var LS_ENTRIES='pmt_cbm_entries_v1', LS_CFG='pmt_cbm_cfg_v1', LS_CAT='pmt_cbm_catalog_v2';
+
+/* Dimensi DALAM (cm) — ESTIMASI AWAL, wajib dikalibrasi di lapangan.
+   Tidak dibedakan warna, hanya ukuran. Bin non-standar pakai tombol CUSTOM. */
+var DEFAULT_CATALOG=[
+ {id:'s', nama:'Bin Kecil',  ket:'S', p:35, l:22, t:15, cal:false},
+ {id:'m', nama:'Bin Sedang', ket:'M', p:52, l:35, t:25, cal:false},
+ {id:'l', nama:'Bin Besar',  ket:'L', p:60, l:40, t:30, cal:false}
+];
+var CUSTOM_ID='CUSTOM';
+
+var FILL_PRESETS=[0,10,25,50,75,90,100,110,125,150];
+
+var state={mode:'BIN', catId:'c1', fill:100};
+var entries=[], cfg={pic:'',wh:'',url:''}, catalog=[];
+
+/* ---------------- storage ---------------- */
+function lsGet(k,f){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ toast('Penyimpanan HP penuh',true); } }
+
+function loadAll(){
+  entries = lsGet(LS_ENTRIES,[]);
+  cfg     = lsGet(LS_CFG,{pic:'',wh:'',url:''});
+  catalog = lsGet(LS_CAT,null) || JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+}
+
+/* ---------------- helpers ---------------- */
+function $(id){ return document.getElementById(id); }
+function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+function fmt(n,d){ d=(d===undefined)?3:d; return (isFinite(n)?n:0).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtInt(n){ return (isFinite(n)?n:0).toLocaleString('id-ID'); }
+function uid(){ return 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function toast(msg,isErr){
+  var t=$('toast'); t.textContent=msg; t.className='toast on'+(isErr?' err':'');
+  clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; },2200);
+}
+function catById(id){ for(var i=0;i<catalog.length;i++){ if(catalog[i].id===id) return catalog[i]; } return null; }
+
+/* volume 1 unit (m3) dari cm */
+function volM3(p,l,t){ return (num(p)*num(l)*num(t))/1000000; }
+
+/* ---------------- current form -> draft entry ---------------- */
+function readForm(){
+  var m=state.mode, qty=Math.max(0,num($('fQty').value)), fill=num($('fFill').value);
+  var e={
+    id:uid(), ts:new Date().toISOString(), pic:cfg.pic||'-', wh:cfg.wh||'-',
+    mode:m, zone:($('fZone').value||'').trim(), rack:($('fRack').value||'').trim(),
+    tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
+    unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false
+  };
+  if(m==='BIN'){
+    if(state.catId===CUSTOM_ID){
+      e.tipe='Bin Custom'; e.p=num($('cP').value); e.l=num($('cL').value); e.t=num($('cT').value);
+      e.isi=($('cNama').value||'').trim();
+    } else {
+      var c=catById(state.catId); if(!c) return e;
+      e.tipe=c.nama; e.p=c.p; e.l=c.l; e.t=c.t; e.isi='';
+    }
+  } else if(m==='NOPACK'){
+    e.tipe='No Package — '+$('sIsi').value; e.p=num($('sP').value); e.l=num($('sL').value); e.t=num($('sT').value); e.isi=$('sIsi').value;
+  } else if(m==='KARTON'){
+    e.tipe='Karton / Tumpukan'; e.p=num($('kP').value); e.l=num($('kL').value); e.t=num($('kT').value); e.isi=$('kIsi').value;
+  } else if(m==='RAK'){
+    e.tipe=$('rTipe').value; e.p=num($('rP').value); e.l=num($('rL').value); e.t=num($('rT').value);
+    e.levels=num($('rLv').value); e.fill=0;
+  }
+  e.unitCbm  = volM3(e.p,e.l,e.t);
+  if(m==='RAK'){
+    e.grossCbm = e.unitCbm*e.qty;          // envelope rak = kapasitas, BUKAN barang
+    e.occCbm   = 0;
+    e.footM2   = (e.p*e.l/10000)*e.qty;
+    e.shelfM2  = (e.p*e.l/10000)*e.levels*e.qty;
+  } else {
+    e.grossCbm = e.unitCbm*e.qty;
+    e.occCbm   = e.grossCbm*(e.fill/100);
+  }
+  return e;
+}
+
+function renderCalc(){
+  var e=readForm();
+  var isRak=(e.mode==='RAK');
+  $('calcLbl').textContent = isRak? 'kapasitas rak' : 'occupied';
+  $('calcMain').textContent = fmt(isRak? e.grossCbm : e.occCbm, 4);
+  var d;
+  if(isRak){
+    d = fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+' rak · '+fmtInt(e.levels)+' lvl · '+fmt(e.footM2,1)+' m² footprint';
+  } else {
+    d = fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+' × '+fmt(e.fill,0)+'% · gross '+fmt(e.grossCbm,4);
+  }
+  $('calcDetail').textContent = d;
+  var z=($('fZone').value||'').trim(), rk=($('fRack').value||'').trim();
+  $('locChip').textContent = (z||rk) ? (z + (z&&rk?' / ':'') + rk) : 'tanpa lokasi';
+}
+
+function toggleLoc(){
+  var f=$('locFields'), s=$('locSummary'), open=(f.style.display!=='none');
+  f.style.display = open?'none':'block';
+  s.style.display = open?'block':'none';
+  $('locChev').textContent = open?'ubah ▼':'tutup ▲';
+}
+
+/* ---------------- save ---------------- */
+function saveEntry(keep){
+  var e=readForm();
+  if(e.qty<=0){ toast('Qty harus > 0',true); return; }
+  if(e.unitCbm<=0){ toast('Dimensi belum lengkap',true); return; }
+  if(e.mode!=='RAK' && e.fill<=0){ toast('% isi harus > 0',true); return; }
+  entries.push(e); lsSet(LS_ENTRIES,entries);
+  /* zona & rak sengaja TIDAK dikosongkan, dan diingat walau app ditutup */
+  cfg.lastZone=e.zone; cfg.lastRack=e.rack; lsSet(LS_CFG,cfg);
+  toast('Tersimpan · '+fmt(e.mode==='RAK'?e.grossCbm:e.occCbm,4)+' m³');
+  if(!keep){ $('fNote').value=''; }
+  $('fQty').value=1;
+  renderAll();
+}
+
+function bumpQty(d){
+  var v=Math.max(1,num($('fQty').value)+d); $('fQty').value=v; renderCalc();
+}
+
+/* ---------------- aggregation ---------------- */
+function agg(list){
+  var a={occ:0,gross:0,rakCbm:0,foot:0,shelf:0,nBin:0,nKarton:0,nSlot:0,nRak:0,
+         byZone:{},byMode:{},byCat:{}};
+  for(var i=0;i<list.length;i++){
+    var e=list[i];
+    if(e.mode==='RAK'){
+      a.rakCbm+=e.grossCbm; a.foot+=e.footM2||0; a.shelf+=e.shelfM2||0; a.nRak+=e.qty;
+    } else {
+      a.occ+=e.occCbm; a.gross+=e.grossCbm;
+      if(e.mode==='BIN') a.nBin+=e.qty;
+      else if(e.mode==='KARTON') a.nKarton+=e.qty;
+      else if(e.mode==='NOPACK') a.nSlot+=e.qty;
+      var z=e.zone||'(kosong)';
+      a.byZone[z]=(a.byZone[z]||0)+e.occCbm;
+      a.byMode[e.mode]=(a.byMode[e.mode]||0)+e.occCbm;
+      if(e.mode==='BIN'){
+        var k=e.tipe||'-';
+        if(!a.byCat[k]) a.byCat[k]={qty:0,gross:0,occ:0};
+        a.byCat[k].qty+=e.qty; a.byCat[k].gross+=e.grossCbm; a.byCat[k].occ+=e.occCbm;
+      }
+    }
+  }
+  return a;
+}
+
+/* ---------------- render ---------------- */
+function renderHeader(){
+  var a=agg(entries);
+  $('heroCbm').textContent=fmt(a.occ,3);
+  $('heroN').textContent=fmtInt(entries.length);
+  $('hdrSub').textContent=(cfg.pic? cfg.pic:'PIC belum diisi')+(cfg.wh? ' · '+cfg.wh:'');
+  var un=entries.filter(function(e){return !e.synced;}).length;
+  var b=$('syncBadge');
+  if(!cfg.url){ b.textContent='OFFLINE'; b.className='badge off'; }
+  else if(un>0){ b.textContent=un+' PENDING'; b.className='badge'; }
+  else { b.textContent='SYNCED'; b.className='badge'; }
+  $('unsyncN').textContent=fmtInt(un);
+}
+
+function renderCatButtons(){
+  var h='', anyUncal=false;
+  for(var i=0;i<catalog.length;i++){
+    var c=catalog[i];
+    if(!c.cal) anyUncal=true;
+    h+='<div class="cat'+(c.id===state.catId?' on':'')+'" onclick="pickCat(\''+c.id+'\')">'+
+       '<div class="sw">'+esc(c.ket||'?')+'</div><div><div class="nm">'+esc(c.nama)+'</div>'+
+       '<div class="dm">'+c.p+'×'+c.l+'×'+c.t+' cm · '+fmt(volM3(c.p,c.l,c.t),4)+' m³'+
+       (c.cal?'':' <span class="warnflag">· belum kalibrasi</span>')+'</div></div></div>';
+  }
+  h+='<div class="cat'+(state.catId===CUSTOM_ID?' on':'')+'" onclick="pickCat(\''+CUSTOM_ID+'\')">'+
+     '<div class="sw" style="background:var(--gold-500);color:#20180A">✎</div><div><div class="nm">Bin Custom / Non-standar</div>'+
+     '<div class="dm">isi sendiri P×L×T di bawah</div></div></div>';
+  $('catList').innerHTML=h;
+  $('calWarn').style.display = anyUncal? 'block':'none';
+  $('customDims').style.display = (state.catId===CUSTOM_ID)?'block':'none';
+}
+function pickCat(id){ state.catId=id; renderCatButtons(); renderCalc(); }
+
+function renderFillChips(){
+  var h='';
+  for(var i=0;i<FILL_PRESETS.length;i++){
+    var v=FILL_PRESETS[i];
+    h+='<div class="chip gold'+(num($('fFill').value)===v?' on':'')+'" onclick="setFill('+v+')">'+v+'%</div>';
+  }
+  $('fillChips').innerHTML=h;
+}
+function setFill(v){ $('fFill').value=v; renderFillChips(); renderCalc(); }
+
+function renderRecent(){
+  var last=entries.slice(-5).reverse();
+  if(!last.length){ $('recentList').innerHTML='<p class="muted mb0">Belum ada entry.</p>'; return; }
+  var h='<div class="tblwrap"><table style="min-width:0"><tbody>';
+  for(var i=0;i<last.length;i++){
+    var e=last[i];
+    h+='<tr><td><span class="tag t-'+e.mode+'">'+e.mode+'</span></td>'+
+       '<td>'+(esc(e.zone||'')+(e.rack?'/'+esc(e.rack):'')||'—')+'</td>'+
+       '<td class="num">'+fmtInt(e.qty)+'×</td>'+
+       '<td class="num"><b>'+fmt(e.mode==='RAK'?e.grossCbm:e.occCbm,4)+'</b></td>'+
+       '<td><button class="btn btn-ghost btn-sm" onclick="delEntry(\''+e.id+'\')">✕</button></td></tr>';
+  }
+  $('recentList').innerHTML=h+'</tbody></table></div>';
+}
+
+function delEntry(id){
+  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){ entries.splice(i,1); break; } }
+  lsSet(LS_ENTRIES,entries); renderAll(); toast('Entry dihapus');
+}
+
+function filtered(){
+  var m=$('dfMode').value, z=($('dfZone').value||'').trim().toLowerCase();
+  return entries.filter(function(e){
+    if(m && e.mode!==m) return false;
+    if(z && (e.zone||'').toLowerCase().indexOf(z)<0) return false;
+    return true;
+  });
+}
+
+function renderData(){
+  var list=filtered().slice().reverse(), h='';
+  $('dCount').textContent=fmtInt(list.length);
+  for(var i=0;i<list.length;i++){
+    var e=list[i];
+    var det=e.tipe+(e.isi&&e.isi!==e.tipe?' · '+e.isi:'')+' · '+e.p+'×'+e.l+'×'+e.t;
+    h+='<tr><td><span class="dot '+(e.synced?'s':'u')+'"></span>'+(list.length-i)+'</td>'+
+       '<td><span class="tag t-'+e.mode+'">'+e.mode+'</span></td>'+
+       '<td>'+(esc(e.zone||'')+(e.rack?' / '+esc(e.rack):'')||'—')+'</td>'+
+       '<td>'+esc(det)+'</td>'+
+       '<td class="num">'+fmtInt(e.qty)+'</td><td class="num">'+(e.mode==='RAK'?'—':fmt(e.fill,0)+'%')+'</td>'+
+       '<td class="num">'+fmt(e.grossCbm,4)+'</td>'+
+       '<td class="num"><b>'+(e.mode==='RAK'?'—':fmt(e.occCbm,4))+'</b></td>'+
+       '<td>'+esc(e.pic)+'</td>'+
+       '<td><button class="btn btn-ghost btn-sm" onclick="delEntry(\''+e.id+'\')">✕</button></td></tr>';
+  }
+  $('dBody').innerHTML=h||'<tr><td colspan="10" class="muted">Tidak ada data.</td></tr>';
+}
+
+function bars(el,obj,gold){
+  var keys=Object.keys(obj).sort(function(a,b){ return obj[b]-obj[a]; });
+  if(!keys.length){ el.innerHTML='<p class="muted mb0">Belum ada data.</p>'; return; }
+  var max=obj[keys[0]]||1, h='';
+  for(var i=0;i<keys.length;i++){
+    var pct=Math.max(2,(obj[keys[i]]/max)*100);
+    h+='<div class="bar"><div class="top"><span class="n">'+esc(keys[i])+'</span><span class="v">'+fmt(obj[keys[i]],3)+' m³</span></div>'+
+       '<div class="track"><div class="fill'+(gold?' gold':'')+'" style="width:'+pct.toFixed(1)+'%"></div></div></div>';
+  }
+  el.innerHTML=h;
+}
+
+function renderSummary(){
+  var a=agg(entries);
+  $('kOcc').textContent=fmt(a.occ,2);
+  $('kGross').textContent=fmt(a.gross,2);
+  $('kUtil').textContent=a.gross>0? Math.round(a.occ/a.gross*100)+'%':'—';
+  $('kRakCbm').textContent=fmt(a.rakCbm,2);
+  $('kBin').textContent=fmtInt(a.nBin);
+  $('kKarton').textContent=fmtInt(a.nKarton);
+  $('kSlot').textContent=fmtInt(a.nSlot);
+  $('kRak').textContent=fmtInt(a.nRak);
+  $('kFoot').textContent=fmt(a.foot,1);
+  $('kShelf').textContent=fmt(a.shelf,1);
+  bars($('barZone'),a.byZone,false);
+  bars($('barMode'),a.byMode,true);
+  var keys=Object.keys(a.byCat).sort(function(x,y){ return a.byCat[y].occ-a.byCat[x].occ; }), h='';
+  for(var i=0;i<keys.length;i++){
+    var c=a.byCat[keys[i]];
+    h+='<tr><td>'+esc(keys[i])+'</td><td class="num">'+fmtInt(c.qty)+'</td><td class="num">'+fmt(c.gross,3)+'</td>'+
+       '<td class="num"><b>'+fmt(c.occ,3)+'</b></td><td class="num">'+(c.gross>0?Math.round(c.occ/c.gross*100)+'%':'—')+'</td></tr>';
+  }
+  $('catBody').innerHTML=h||'<tr><td colspan="5" class="muted">Belum ada data BIN.</td></tr>';
+  renderSim(a);
+}
+
+function renderSim(a){
+  var grow=num($('simGrow').value)/100, tgt=num($('simFill').value)/100;
+  var dens=num($('simDens').value)/100, hgt=num($('simH').value), aisle=num($('simAisle').value);
+  if(tgt<=0) tgt=0.8; if(dens<=0) dens=0.55; if(hgt<=0) hgt=2.5; if(aisle<=0) aisle=1.8;
+  var vBarang = a.occ*(1+grow);        // volume barang + growth
+  var vContainer = vBarang/tgt;        // volume container yang dibutuhkan
+  var vRak = vContainer/dens;          // volume envelope rak
+  var luasRak = vRak/hgt;              // m2 footprint rak
+  var luasLantai = luasRak*aisle;      // + gang, staging, office
+  $('simVol').textContent=fmt(vRak,1);
+  $('simArea').textContent=fmt(luasLantai,0);
+  $('simDetail').textContent='Barang '+fmt(a.occ,1)+' m³ +'+Math.round(grow*100)+'% = '+fmt(vBarang,1)+
+    ' m³ → container '+fmt(vContainer,1)+' m³ → rak '+fmt(vRak,1)+' m³ → footprint rak '+fmt(luasRak,0)+' m² × '+aisle+' = '+fmt(luasLantai,0)+' m².';
+}
+
+function renderCatEdit(){
+  var h='';
+  for(var i=0;i<catalog.length;i++){
+    var c=catalog[i];
+    h+='<div style="border:1px solid var(--line);border-radius:11px;padding:10px;margin-bottom:9px;background:#fff">'+
+      '<div class="row" style="align-items:center;margin-bottom:8px">'+
+        '<div class="sw" style="flex:0 0 28px">'+esc(c.ket||'?')+'</div>'+
+        '<input value="'+esc(c.nama)+'" oninput="editCat('+i+',\'nama\',this.value)" style="flex:1">'+
+      '</div>'+
+      '<div class="grid3" style="margin-bottom:8px">'+
+        '<input type="number" inputmode="decimal" value="'+c.p+'" oninput="editCat('+i+',\'p\',this.value)" placeholder="P">'+
+        '<input type="number" inputmode="decimal" value="'+c.l+'" oninput="editCat('+i+',\'l\',this.value)" placeholder="L">'+
+        '<input type="number" inputmode="decimal" value="'+c.t+'" oninput="editCat('+i+',\'t\',this.value)" placeholder="T">'+
+      '</div>'+
+      '<div class="row" style="align-items:center">'+
+        '<div class="small" style="flex:1;color:var(--ink-2)"><b>'+fmt(volM3(c.p,c.l,c.t),4)+'</b> m³/unit</div>'+
+        '<div class="chip'+(c.cal?' on':'')+'" style="flex:0 0 auto" onclick="toggleCal('+i+')">'+(c.cal?'✓ Terkalibrasi':'Tandai kalibrasi')+'</div>'+
+        '<button class="btn btn-ghost btn-sm" style="flex:0 0 auto" onclick="delCat('+i+')">✕</button>'+
+      '</div></div>';
+  }
+  $('catEdit').innerHTML=h;
+}
+function editCat(i,f,v){
+  catalog[i][f]=(f==='nama')?v:num(v); lsSet(LS_CAT,catalog);
+  renderCatButtons(); renderCalc(); renderHeader();
+}
+function toggleCal(i){ catalog[i].cal=!catalog[i].cal; lsSet(LS_CAT,catalog); renderCatEdit(); renderCatButtons(); }
+function delCat(i){
+  if(catalog.length<=1){ toast('Minimal 1 tipe',true); return; }
+  catalog.splice(i,1); lsSet(LS_CAT,catalog);
+  if(!catById(state.catId)) state.catId=catalog[0].id;
+  renderCatEdit(); renderCatButtons(); renderCalc();
+}
+function addCat(){
+  catalog.push({id:'c'+Date.now().toString(36), nama:'Ukuran Baru', ket:'+', p:50,l:35,t:25, cal:false});
+  lsSet(LS_CAT,catalog); renderCatEdit(); renderCatButtons();
+}
+
+function renderZoneList(){
+  var seen={},h='';
+  for(var i=0;i<entries.length;i++){ if(entries[i].zone) seen[entries[i].zone]=1; }
+  ['A','B','C','D','FOC AREA','RECEIVING','GLASS AREA','COOLING','MEZZANINE','LANTAI'].forEach(function(z){ seen[z]=1; });
+  Object.keys(seen).forEach(function(z){ h+='<option value="'+esc(z)+'">'; });
+  $('zoneList').innerHTML=h;
+}
+
+function renderAll(){
+  renderHeader(); renderRecent(); renderData(); renderSummary(); renderZoneList(); renderCalc();
+}
+
+/* ---------------- mode switching ---------------- */
+function setMode(m){
+  state.mode=m;
+  var tabs=document.querySelectorAll('#modeTabs .mode');
+  for(var i=0;i<tabs.length;i++) tabs[i].className='mode'+(tabs[i].getAttribute('data-mode')===m?' on':'');
+  $('boxBin').style.display    = (m==='BIN')?'block':'none';
+  $('boxSlot').style.display   = (m==='NOPACK')?'block':'none';
+  $('boxKarton').style.display = (m==='KARTON')?'block':'none';
+  $('boxRak').style.display    = (m==='RAK')?'block':'none';
+  $('fillWrap').style.display  = (m==='RAK')?'none':'block';
+  var lbl={BIN:'Jumlah bin identik (qty)',NOPACK:'Jumlah slot identik (qty)',
+           KARTON:'Jumlah box identik (qty) — tumpukan isi 1',RAK:'Jumlah rak identik (qty)'};
+  $('qtyLbl').textContent=lbl[m];
+  $('fillLbl').textContent=(m==='KARTON')?'Persentase isi / kepadatan tumpukan':'Persentase isi';
+  $('qtyHead').textContent=(m==='RAK')?'Jumlah Rak':'Jumlah & % Isi';
+  renderCalc();
+}
+
+/* ---------------- config ---------------- */
+function saveCfg(){
+  cfg.pic=($('cfgPic').value||'').trim();
+  cfg.wh=($('cfgWh').value||'').trim();
+  cfg.url=($('cfgUrl').value||'').trim();
+  lsSet(LS_CFG,cfg); renderHeader(); toast('Setelan disimpan');
+}
+
+/* ---------------- sync ---------------- */
+function pushAll(){
+  if(!cfg.url){ toast('URL Apps Script belum diisi (tab Setup)',true); return; }
+  var pending=entries.filter(function(e){ return !e.synced; });
+  if(!pending.length){ toast('Semua sudah tersinkron'); return; }
+  toast('Mengirim '+pending.length+' entry...');
+  fetch(cfg.url,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'}, /* hindari CORS preflight */
+    body:JSON.stringify({action:'append', rows:pending})
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(res && res.ok){
+      var ids={}; pending.forEach(function(e){ ids[e.id]=1; });
+      entries.forEach(function(e){ if(ids[e.id]) e.synced=true; });
+      lsSet(LS_ENTRIES,entries); renderAll(); toast('✓ '+pending.length+' entry tersinkron');
+    } else { toast('Gagal: '+((res&&res.error)||'respons tidak dikenal'),true); }
+  }).catch(function(err){ toast('Gagal sync — cek koneksi/URL',true); console.error(err); });
+}
+
+function pullAll(){
+  if(!cfg.url){ toast('URL Apps Script belum diisi',true); return; }
+  toast('Menarik data tim...');
+  fetch(cfg.url+'?action=list').then(function(r){ return r.json(); }).then(function(res){
+    if(!res || !res.ok){ toast('Gagal menarik data',true); return; }
+    var have={}; entries.forEach(function(e){ have[e.id]=1; });
+    var added=0;
+    (res.rows||[]).forEach(function(r){
+      if(have[r.id]) return;
+      r.synced=true;
+      ['p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2'].forEach(function(k){ r[k]=num(r[k]); });
+      entries.push(r); added++;
+    });
+    lsSet(LS_ENTRIES,entries); renderAll();
+    toast(added? ('✓ '+added+' entry tim ditambahkan') : 'Tidak ada data baru');
+  }).catch(function(err){ toast('Gagal menarik data',true); console.error(err); });
+}
+
+/* ---------------- export ---------------- */
+var CSV_COLS=['ts','pic','wh','mode','zone','rack','tipe','isi','p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2','note'];
+function exportCsv(){
+  var rows=[CSV_COLS.join(';')];
+  filtered().forEach(function(e){
+    rows.push(CSV_COLS.map(function(c){
+      var v=e[c]==null?'':e[c];
+      if(typeof v==='number') v=String(v).replace('.',',');
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(';'));
+  });
+  var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='CBM_'+(cfg.pic||'PMT').replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('CSV diunduh');
+}
+
+function shareWa(){
+  var a=agg(entries);
+  var t='*WAREHOUSE PMT - CBM CALCULATION*\n'+
+   'PIC: '+(cfg.pic||'-')+(cfg.wh?' | '+cfg.wh:'')+'\n'+
+   'Tanggal: '+new Date().toLocaleDateString('id-ID')+'\n\n'+
+   'CBM barang (occupied): *'+fmt(a.occ,2)+' m³*\n'+
+   'CBM ruang terpakai (gross): '+fmt(a.gross,2)+' m³\n'+
+   'Utilisasi bin: '+(a.gross>0?Math.round(a.occ/a.gross*100)+'%':'-')+'\n'+
+   'CBM envelope rak: '+fmt(a.rakCbm,2)+' m³\n\n'+
+   'Bin: '+fmtInt(a.nBin)+'\nKarton / tumpukan: '+fmtInt(a.nKarton)+'\n'+
+   'Item No Package: '+fmtInt(a.nSlot)+'\nRak: '+fmtInt(a.nRak)+'\n'+
+   'Footprint rak: '+fmt(a.foot,1)+' m²\n\nTotal entry: '+fmtInt(entries.length);
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
+}
+
+function wipeLocal(){
+  if(!confirm('Hapus SEMUA data entry di HP ini? Data yang sudah tersinkron tetap aman di Google Sheets.')) return;
+  entries=[]; lsSet(LS_ENTRIES,entries); renderAll(); toast('Data lokal dihapus');
+}
+
+/* ---------------- boot ---------------- */
+(function init(){
+  loadAll();
+  $('cfgPic').value=cfg.pic; $('cfgWh').value=cfg.wh; $('cfgUrl').value=cfg.url;
+  $('fZone').value=cfg.lastZone||''; $('fRack').value=cfg.lastRack||'';
+  if(catalog.length) state.catId=catalog[0].id;
+
+  var tabs=document.querySelectorAll('#modeTabs .mode');
+  for(var i=0;i<tabs.length;i++){
+    tabs[i].addEventListener('click',function(){ setMode(this.getAttribute('data-mode')); });
+  }
+  var nb=document.querySelectorAll('nav button');
+  for(var j=0;j<nb.length;j++){
+    nb[j].addEventListener('click',function(){
+      var pg=this.getAttribute('data-pg');
+      var all=document.querySelectorAll('.page');
+      for(var k=0;k<all.length;k++) all[k].className='page'+(all[k].id===pg?' on':'');
+      for(var k2=0;k2<nb.length;k2++) nb[k2].className=(nb[k2]===this?'on':'');
+      document.body.classList.toggle('inputpage', pg==='pgInput');
+      window.scrollTo(0,0);
+      if(pg==='pgSetup') renderCatEdit();
+      if(pg==='pgSum') renderSummary();
+      if(pg==='pgData') renderData();
+    });
+  }
+  ['fZone','fRack','cP','cL','cT','sP','sL','sT','kP','kL','kT','rP','rL','rT','rLv','fQty','fFill','sIsi','kIsi','rTipe']
+    .forEach(function(id){ var el=$(id); if(el){ el.addEventListener('input',renderCalc); el.addEventListener('change',renderCalc); } });
+  $('fFill').addEventListener('input',renderFillChips);
+  ['dfMode','dfZone'].forEach(function(id){ $(id).addEventListener('input',renderData); $(id).addEventListener('change',renderData); });
+  ['simGrow','simFill','simDens','simH','simAisle'].forEach(function(id){ $(id).addEventListener('input',function(){ renderSim(agg(entries)); }); });
+
+  document.body.classList.add('inputpage');
+
+  /* tinggi nav -> variabel CSS, supaya action bar pas di atasnya */
+  function setNavH(){
+    var n=document.querySelector('nav');
+    document.documentElement.style.setProperty('--navh', Math.round(n.getBoundingClientRect().height)+'px');
+  }
+  setNavH(); window.addEventListener('resize',setNavH);
+
+  /* keyboard HP: naikkan action bar di atas keyboard (iOS & Android) */
+  var vv=window.visualViewport;
+  if(vv){
+    var onVV=function(){
+      var off=Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      document.documentElement.style.setProperty('--kb', off+'px');
+      document.body.classList.toggle('kb', off>120);
+    };
+    vv.addEventListener('resize',onVV); vv.addEventListener('scroll',onVV); onVV();
+  }
+
+  var hdr=document.querySelector('header');
+  window.addEventListener('scroll',function(){
+    if(window.scrollY>70) hdr.classList.add('slim'); else hdr.classList.remove('slim');
+  },{passive:true});
+
+  renderCatButtons(); renderFillChips(); renderCatEdit(); setMode('BIN'); renderAll();
+})();
+</script>
+</body>
+</html>
