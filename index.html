@@ -183,6 +183,23 @@ nav button.on{color:var(--gold-400);background:rgba(255,255,255,.06)}
   .actionbar, nav{ left:50%; transform:translateX(-50%); width:100%; max-width:var(--appw) }
   .modes{grid-template-columns:repeat(4,1fr)}
 }
+/* ---------- scanner ---------- */
+#scanWrap{position:fixed;inset:0;z-index:90;background:#000;display:none}
+#scanVideo{width:100%;height:100%;object-fit:cover;display:block}
+.scantop{position:absolute;top:0;left:0;right:0;padding:calc(11px + env(safe-area-inset-top,0)) 14px 11px;
+  background:linear-gradient(180deg,rgba(11,31,53,.92),rgba(11,31,53,.55));color:#fff;
+  display:flex;align-items:center;gap:8px}
+.scantop .t{font-size:12.5px;font-weight:800;letter-spacing:.3px}
+.scantop button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+  color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700}
+.scantop button:first-of-type{margin-left:auto}
+.reticle{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);height:150px;
+  border:2px solid var(--gold-400);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.42)}
+.scanbot{position:absolute;bottom:0;left:0;right:0;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0));
+  background:linear-gradient(0deg,rgba(11,31,53,.92),rgba(11,31,53,.55));color:#fff}
+.scanbot .msg{font-size:12.5px;color:#CDDDEB;margin-bottom:9px;min-height:34px;line-height:1.35}
+.scanbot .row2{display:flex;gap:8px}
+.scanbot .row2 button{flex:1;padding:12px;border:none;border-radius:11px;font-size:13.5px;font-weight:800}
 /* ---------- misc ---------- */
 .page{display:none}.page.on{display:block}
 .toast{
@@ -253,6 +270,13 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <datalist id="zoneList"></datalist>
     <p class="muted mt10 mb0">Zona &amp; rak tetap tersimpan setelah Simpan, jadi tidak perlu diketik ulang tiap entry.</p>
     </div>
+    <div class="divline"></div>
+    <label>Bin Locator <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— scan barcode di label bin</span></label>
+    <div class="row mb0">
+      <input id="fLoc" placeholder="mis. A-6-5-2" style="flex:1">
+      <button class="btn btn-primary btn-sm" style="flex:0 0 104px" onclick="openScan()">📷 SCAN</button>
+    </div>
+    <p class="muted mt10 mb0">Dikosongkan otomatis tiap Simpan, karena locator unik per bin.</p>
   </div>
 
   <!-- BIN -->
@@ -458,7 +482,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
   <div class="card">
     <h2>Katalog Ukuran Bin</h2>
-    <div class="hint">Bin dibedakan <b>hanya berdasarkan ukuran</b> (Kecil / Sedang / Besar), bukan warna. Dimensi di bawah adalah <b>estimasi awal</b> — wajib ukur 1 sampel fisik tiap ukuran (dimensi <b>dalam</b>, cm) lalu tandai <b>Terkalibrasi</b>. Bin yang tidak masuk 3 ukuran ini pakai tombol <b>Bin Custom</b> di layar input.</div>
+    <div class="hint">Bin dibedakan <b>hanya berdasarkan ukuran</b> (Kecil / Sedang / Besar), bukan warna. Dimensi di bawah adalah <b>hasil ukur fisik lapangan 03 Sep 2026</b> dan sudah <b>terkalibrasi</b> — jangan diubah tanpa koordinasi, karena angka ini harus sama di semua HP. Bin yang ukurannya di luar 3 ini pakai tombol <b>Bin Custom</b> di layar input.</div>
     <div id="catEdit"></div>
     <button class="btn btn-ghost mt10" onclick="addCat()">+ Tambah Ukuran Bin</button>
   </div>
@@ -467,7 +491,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <h2>Cara Pakai Singkat</h2>
     <ol class="small" style="padding-left:18px;margin:0;color:var(--ink-2)">
       <li>Isi <b>Nama PIC</b> &amp; <b>URL Apps Script</b> sekali di awal.</li>
-      <li>Kalibrasi katalog ukuran bin (ukur fisik 1 sampel Kecil / Sedang / Besar).</li>
+      <li>Cek <b>Katalog Ukuran Bin</b> di Setup — sudah terkalibrasi, jangan diubah.</li>
       <li>Survey rak dulu pakai mode <b>RAK</b> (1 entry per rak identik) — ini basis kapasitas.</li>
       <li>Sapu isi rak pakai mode <b>BIN</b> / <b>NO PACK</b> / <b>KARTON</b>. Bin ukuran tidak standar pakai <b>Bin Custom</b>.</li>
       <li>Area lantai, FOC, Receiving pakai mode <b>KARTON</b> (ukur alas × tinggi tumpukan, % dipakai sebagai kepadatan).</li>
@@ -493,6 +517,22 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
 </main>
 </div><!-- /shell -->
+
+<div id="scanWrap">
+  <video id="scanVideo" playsinline muted></video>
+  <div class="scantop">
+    <span class="t">SCAN BIN LOCATOR</span>
+    <button onclick="toggleTorch()" id="torchBtn">🔆 Lampu</button>
+    <button onclick="closeScan()">✕ Tutup</button>
+  </div>
+  <div class="reticle"></div>
+  <div class="scanbot">
+    <div class="msg" id="scanMsg">Menyiapkan kamera...</div>
+    <div class="row2">
+      <button class="btn-gold" onclick="closeScan(true)">Isi Manual</button>
+    </div>
+  </div>
+</div>
 
 <div class="actionbar" id="actionBar">
   <div class="abtop">
@@ -520,14 +560,14 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
    Single-file. Offline-first (localStorage) + Google Sheets sync.
    ============================================================ */
 
-var LS_ENTRIES='pmt_cbm_entries_v1', LS_CFG='pmt_cbm_cfg_v1', LS_CAT='pmt_cbm_catalog_v2';
+var LS_ENTRIES='pmt_cbm_entries_v1', LS_CFG='pmt_cbm_cfg_v1', LS_CAT='pmt_cbm_catalog_v3';
 
-/* Dimensi DALAM (cm) — ESTIMASI AWAL, wajib dikalibrasi di lapangan.
+/* Dimensi (cm) — HASIL UKUR FISIK LAPANGAN, 03 Sep 2026.
    Tidak dibedakan warna, hanya ukuran. Bin non-standar pakai tombol CUSTOM. */
 var DEFAULT_CATALOG=[
- {id:'s', nama:'Bin Kecil',  ket:'S', p:35, l:22, t:15, cal:false},
- {id:'m', nama:'Bin Sedang', ket:'M', p:52, l:35, t:25, cal:false},
- {id:'l', nama:'Bin Besar',  ket:'L', p:60, l:40, t:30, cal:false}
+ {id:'s', nama:'Bin Kecil',  ket:'S', p:46, l:30, t:18, cal:true},
+ {id:'m', nama:'Bin Sedang', ket:'M', p:47, l:35, t:25, cal:true},
+ {id:'l', nama:'Bin Besar',  ket:'L', p:60, l:42, t:37, cal:true}
 ];
 var CUSTOM_ID='CUSTOM';
 
@@ -568,6 +608,7 @@ function readForm(){
   var e={
     id:uid(), ts:new Date().toISOString(), pic:cfg.pic||'-', wh:cfg.wh||'-',
     mode:m, zone:($('fZone').value||'').trim(), rack:($('fRack').value||'').trim(),
+    locator:($('fLoc').value||'').trim(),
     tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
     unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false
   };
@@ -634,6 +675,7 @@ function saveEntry(keep){
   cfg.lastZone=e.zone; cfg.lastRack=e.rack; lsSet(LS_CFG,cfg);
   toast('Tersimpan · '+fmt(e.mode==='RAK'?e.grossCbm:e.occCbm,4)+' m³');
   if(!keep){ $('fNote').value=''; }
+  $('fLoc').value='';   /* locator unik per bin -> selalu dikosongkan */
   $('fQty').value=1;
   renderAll();
 }
@@ -748,7 +790,7 @@ function renderData(){
     var det=e.tipe+(e.isi&&e.isi!==e.tipe?' · '+e.isi:'')+' · '+e.p+'×'+e.l+'×'+e.t;
     h+='<tr><td><span class="dot '+(e.synced?'s':'u')+'"></span>'+(list.length-i)+'</td>'+
        '<td><span class="tag t-'+e.mode+'">'+e.mode+'</span></td>'+
-       '<td>'+(esc(e.zone||'')+(e.rack?' / '+esc(e.rack):'')||'—')+'</td>'+
+       '<td>'+((esc(e.zone||'')+(e.rack?' / '+esc(e.rack):'')+(e.locator?' · '+esc(e.locator):''))||'—')+'</td>'+
        '<td>'+esc(det)+'</td>'+
        '<td class="num">'+fmtInt(e.qty)+'</td><td class="num">'+(e.mode==='RAK'?'—':fmt(e.fill,0)+'%')+'</td>'+
        '<td class="num">'+fmt(e.grossCbm,4)+'</td>'+
@@ -924,7 +966,7 @@ function pullAll(){
 }
 
 /* ---------------- export ---------------- */
-var CSV_COLS=['ts','pic','wh','mode','zone','rack','tipe','isi','p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2','note'];
+var CSV_COLS=['ts','pic','wh','mode','zone','rack','locator','tipe','isi','p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2','note'];
 function exportCsv(){
   var rows=[CSV_COLS.join(';')];
   filtered().forEach(function(e){
@@ -962,6 +1004,116 @@ function wipeLocal(){
   entries=[]; lsSet(LS_ENTRIES,entries); renderAll(); toast('Data lokal dihapus');
 }
 
+/* ---------------- scanner bin locator ---------------- */
+var zxReader=null, scanActive=false, scanTimer=null, nativeDet=null, torchOn=false;
+
+function setScanMsg(m){ $('scanMsg').textContent=m; }
+
+function beep(){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    var ac=new C(), o=ac.createOscillator(), g=ac.createGain();
+    o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(.001,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.25,ac.currentTime+.01);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.18);
+    o.start(); o.stop(ac.currentTime+.19);
+  }catch(e){}
+}
+
+function loadZX(){
+  return new Promise(function(res,rej){
+    if(window.ZXing) return res();
+    var el=document.createElement('script');
+    el.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+    el.onload=function(){ res(); };
+    el.onerror=function(){ rej(new Error('load gagal')); };
+    document.head.appendChild(el);
+  });
+}
+
+function openScan(){
+  $('scanWrap').style.display='block';
+  scanActive=true; torchOn=false; $('torchBtn').textContent='🔆 Lampu';
+  setScanMsg('Menyiapkan kamera...');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    setScanMsg('Browser ini tidak mendukung kamera. Tekan Isi Manual.'); return;
+  }
+  if('BarcodeDetector' in window){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}})
+      .then(function(st){
+        if(!scanActive){ stopTracks(st); return; }
+        var v=$('scanVideo'); v.srcObject=st;
+        return v.play().then(function(){
+          try{ nativeDet=new window.BarcodeDetector(); }catch(e){ nativeDet=null; }
+          if(!nativeDet) return startZX();
+          setScanMsg('Arahkan kamera ke barcode / QR pada label bin.');
+          loopNative();
+        });
+      })
+      .catch(function(){ setScanMsg('Kamera tidak bisa diakses. Izinkan kamera di browser, atau tekan Isi Manual.'); });
+  } else {
+    startZX();
+  }
+}
+
+function loopNative(){
+  if(!scanActive || !nativeDet) return;
+  nativeDet.detect($('scanVideo')).then(function(codes){
+    if(!scanActive) return;
+    if(codes && codes.length && codes[0].rawValue){ gotCode(codes[0].rawValue); return; }
+    scanTimer=setTimeout(loopNative,220);
+  }).catch(function(){ if(scanActive) scanTimer=setTimeout(loopNative,400); });
+}
+
+function startZX(){
+  setScanMsg('Memuat pembaca barcode...');
+  return loadZX().then(function(){
+    if(!scanActive) return;
+    zxReader=new window.ZXing.BrowserMultiFormatReader();
+    setScanMsg('Arahkan kamera ke barcode / QR pada label bin.');
+    return zxReader.decodeFromConstraints(
+      {video:{facingMode:{ideal:'environment'}}}, 'scanVideo',
+      function(result){ if(result && result.getText && scanActive) gotCode(result.getText()); });
+  }).catch(function(){
+    setScanMsg('Pembaca barcode perlu internet sekali untuk dimuat. Sambungkan internet lalu buka Scan lagi, atau tekan Isi Manual.');
+  });
+}
+
+function gotCode(txt){
+  txt=String(txt).trim(); if(!txt) return;
+  beep();
+  if(navigator.vibrate){ try{ navigator.vibrate(60); }catch(e){} }
+  $('fLoc').value=txt;
+  closeScan();
+  toast('Locator: '+txt);
+  renderCalc();
+}
+
+function stopTracks(st){ try{ st.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} }
+
+function closeScan(focusManual){
+  scanActive=false; nativeDet=null;
+  clearTimeout(scanTimer);
+  try{ if(zxReader){ zxReader.reset(); zxReader=null; } }catch(e){}
+  var v=$('scanVideo');
+  if(v && v.srcObject){ stopTracks(v.srcObject); v.srcObject=null; }
+  $('scanWrap').style.display='none';
+  if(focusManual===true){ $('fLoc').focus(); }
+}
+
+function toggleTorch(){
+  var v=$('scanVideo'), st=v && v.srcObject;
+  if(!st){ setScanMsg('Kamera belum aktif.'); return; }
+  var tr=st.getVideoTracks()[0]; if(!tr) return;
+  var caps = tr.getCapabilities ? tr.getCapabilities() : null;
+  if(!caps || !('torch' in caps)){ setScanMsg('HP ini tidak mendukung lampu lewat browser.'); return; }
+  torchOn=!torchOn;
+  tr.applyConstraints({advanced:[{torch:torchOn}]})
+    .then(function(){ $('torchBtn').textContent = torchOn?'🔅 Matikan':'🔆 Lampu'; })
+    .catch(function(){ setScanMsg('Lampu gagal dinyalakan.'); });
+}
+
 /* ---------------- boot ---------------- */
 (function init(){
   loadAll();
@@ -987,7 +1139,7 @@ function wipeLocal(){
       if(pg==='pgData') renderData();
     });
   }
-  ['fZone','fRack','cP','cL','cT','sP','sL','sT','kP','kL','kT','rP','rL','rT','rLv','fQty','fFill','sIsi','kIsi','rTipe']
+  ['fZone','fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','rP','rL','rT','rLv','fQty','fFill','sIsi','kIsi','rTipe']
     .forEach(function(id){ var el=$(id); if(el){ el.addEventListener('input',renderCalc); el.addEventListener('change',renderCalc); } });
   $('fFill').addEventListener('input',renderFillChips);
   ['dfMode','dfZone'].forEach(function(id){ $(id).addEventListener('input',renderData); $(id).addEventListener('change',renderData); });
@@ -1013,9 +1165,16 @@ function wipeLocal(){
     vv.addEventListener('resize',onVV); vv.addEventListener('scroll',onVV); onVV();
   }
 
-  var hdr=document.querySelector('header');
+  /* Header mengecil saat scroll. WAJIB pakai hysteresis + guard tinggi halaman:
+     tanpa itu, header yang mengecil mengubah tinggi dokumen -> scrollY bergeser ->
+     kelas dilepas -> header membesar lagi -> halaman BERGETAR (osilasi tanpa henti). */
+  var hdr=document.querySelector('header'), isSlim=false;
   window.addEventListener('scroll',function(){
-    if(window.scrollY>70) hdr.classList.add('slim'); else hdr.classList.remove('slim');
+    var y=window.scrollY||document.documentElement.scrollTop||0;
+    var room=document.documentElement.scrollHeight-window.innerHeight;
+    if(room<200){ if(isSlim){ hdr.classList.remove('slim'); isSlim=false; } return; }
+    if(!isSlim && y>130){ hdr.classList.add('slim'); isSlim=true; }
+    else if(isSlim && y<40){ hdr.classList.remove('slim'); isSlim=false; }
   },{passive:true});
 
   renderCatButtons(); renderFillChips(); renderCatEdit(); setMode('BIN'); renderAll();
