@@ -127,7 +127,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.2px}
 .t-BIN{background:#DCE9F6;color:#12456F}.t-NOPACK{background:#E7E1F5;color:#453074}
 .t-KARTON{background:#F6EAC4;color:#6B5309}
-.t-RAK{background:#E6E9ED;color:#33465C}
+.t-RAK{background:#E6E9ED;color:#33465C}.t-INFRA{background:#E6E9ED;color:#33465C}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
 .dot.s{background:var(--ok)}.dot.u{background:var(--warn)}
 /* ---------- stats ---------- */
@@ -183,23 +183,6 @@ nav button.on{color:var(--gold-400);background:rgba(255,255,255,.06)}
   .actionbar, nav{ left:50%; transform:translateX(-50%); width:100%; max-width:var(--appw) }
   .modes{grid-template-columns:repeat(4,1fr)}
 }
-/* ---------- scanner ---------- */
-#scanWrap{position:fixed;inset:0;z-index:90;background:#000;display:none}
-#scanVideo{width:100%;height:100%;object-fit:cover;display:block}
-.scantop{position:absolute;top:0;left:0;right:0;padding:calc(11px + env(safe-area-inset-top,0)) 14px 11px;
-  background:linear-gradient(180deg,rgba(11,31,53,.92),rgba(11,31,53,.55));color:#fff;
-  display:flex;align-items:center;gap:8px}
-.scantop .t{font-size:12.5px;font-weight:800;letter-spacing:.3px}
-.scantop button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
-  color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700}
-.scantop button:first-of-type{margin-left:auto}
-.reticle{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);height:150px;
-  border:2px solid var(--gold-400);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.42)}
-.scanbot{position:absolute;bottom:0;left:0;right:0;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0));
-  background:linear-gradient(0deg,rgba(11,31,53,.92),rgba(11,31,53,.55));color:#fff}
-.scanbot .msg{font-size:12.5px;color:#CDDDEB;margin-bottom:9px;min-height:34px;line-height:1.35}
-.scanbot .row2{display:flex;gap:8px}
-.scanbot .row2 button{flex:1;padding:12px;border:none;border-radius:11px;font-size:13.5px;font-weight:800}
 /* ---------- misc ---------- */
 .page{display:none}.page.on{display:block}
 .toast{
@@ -249,9 +232,14 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
   <div class="modes" id="modeTabs">
     <div class="mode on" data-mode="BIN"><div class="ic">🧺</div><div class="tx">BIN</div></div>
-    <div class="mode" data-mode="NOPACK"><div class="ic">🪟</div><div class="tx">NO PACK</div></div>
     <div class="mode" data-mode="KARTON"><div class="ic">📦</div><div class="tx">KARTON</div></div>
-    <div class="mode" data-mode="RAK"><div class="ic">🏗️</div><div class="tx">RAK</div></div>
+    <div class="mode" data-mode="NOPACK"><div class="ic">🪟</div><div class="tx">NO PACK</div></div>
+    <div class="mode" data-mode="INFRA"><div class="ic">🏗️</div><div class="tx">INFRA</div></div>
+  </div>
+
+  <div class="warnbox" id="editBanner" style="display:none;background:#FFF6E0;border-color:#E8CE8A">
+    <b>Mode edit</b> — entry <span id="editInfo">—</span> sedang diubah.
+    <button class="btn btn-ghost btn-sm mt10" style="width:100%" onclick="cancelEdit()">Batalkan edit</button>
   </div>
 
   <div class="card" id="locCard">
@@ -263,20 +251,13 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       </div>
     </div>
     <div id="locFields">
-    <div class="row mb0">
-      <div><label>Zona / Area <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fZone" list="zoneList" placeholder="A / B / C / D / FOC ..."></div>
-      <div><label>Rak <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fRack" placeholder="A1, D6, ..."></div>
+    <div class="grid2 mb0">
+      <div><label>Rak <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fRack" list="rackList" placeholder="A1, D6, ..."></div>
+      <div><label>Bin Locator <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fLoc" placeholder="mis. A-6-5-2"></div>
     </div>
-    <datalist id="zoneList"></datalist>
-    <p class="muted mt10 mb0">Zona &amp; rak tetap tersimpan setelah Simpan, jadi tidak perlu diketik ulang tiap entry.</p>
+    <datalist id="rackList"></datalist>
+    <p class="muted mt10 mb0"><b>Rak</b> tetap tersimpan setelah Simpan, jadi tidak perlu diketik ulang tiap entry.<br><b>Bin Locator</b> dikosongkan otomatis tiap Simpan, karena unik per bin.</p>
     </div>
-    <div class="divline"></div>
-    <label>Bin Locator <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— scan barcode di label bin</span></label>
-    <div class="row mb0">
-      <input id="fLoc" placeholder="mis. A-6-5-2" style="flex:1">
-      <button class="btn btn-primary btn-sm" style="flex:0 0 104px" onclick="openScan()">📷 SCAN</button>
-    </div>
-    <p class="muted mt10 mb0">Dikosongkan otomatis tiap Simpan, karena locator unik per bin.</p>
   </div>
 
   <!-- BIN -->
@@ -308,8 +289,9 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     </div>
     <div class="fg mb0"><label>Jenis barang</label>
       <select id="sIsi">
-        <option>Kaca / Glass panel</option><option>Door panel</option><option>Sheet metal / Body part</option>
-        <option>Rak kawat / Grill</option><option>Campuran</option><option>Lainnya</option>
+        <option>Glass Panel</option><option>Basket</option><option>Compressor</option>
+        <option>Gasket</option><option>Door</option><option>Casing</option>
+        <option>Chimney</option><option>Body</option><option>Lainnya</option>
       </select>
     </div>
   </div>
@@ -325,32 +307,40 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     </div>
     <div class="fg mb0"><label>Isi</label>
       <select id="kIsi">
-        <option>Karton campuran</option><option>Kaca / Panel</option><option>Unit besar / Appliance</option>
-        <option>Material packing</option><option>Barang FOC</option><option>Barang Receiving</option><option>Lainnya</option>
+        <option>Glass Panel</option><option>Compressor</option><option>Gasket</option>
+        <option>Door</option><option>Casing</option><option>Chimney</option>
+        <option>Body</option><option>Lainnya</option>
       </select>
     </div>
   </div>
 
-  <!-- RAK -->
-  <div class="card" id="boxRak" style="display:none">
-    <h2>Data Rak (Kapasitas)</h2>
-    <p class="muted" style="margin-top:-4px">Mode ini <b>tidak menambah CBM barang</b>. Dipakai untuk hitung kapasitas & footprint rak eksisting.</p>
-    <div class="fg"><label>Tipe rak</label>
-      <select id="rTipe">
-        <option>Rak besi siku lubang (light duty)</option>
-        <option>Rak heavy duty / pallet racking</option>
-        <option>Rak sekat kayu (glass area)</option>
-        <option>Rak louvre bin (bin miring)</option>
-        <option>Rak kawat / mezzanine</option>
-        <option>Lainnya</option>
+  <!-- INFRASTRUCTURE -->
+  <div class="card" id="boxInfra" style="display:none">
+    <h2>Infrastructure</h2>
+    <p class="muted" style="margin-top:-4px">Hitung <b>aset gudang</b>: rak, bin kosong, lampu, meja, dll. Mode ini <b>tidak masuk hitungan CBM barang</b> dan disimpan di sheet Google Sheets <b>terpisah</b>.</p>
+    <div class="fg"><label>Jenis infrastructure</label>
+      <select id="iJenis">
+        <option>Rak</option><option>Bin</option><option>Lampu</option>
+        <option>Meja</option><option>Kursi</option><option>Trolley / Hand pallet</option>
+        <option>Tangga</option><option>Lemari / Locker</option>
+        <option>APAR</option><option>Kipas / Blower</option><option>Lainnya</option>
       </select>
     </div>
-    <div class="grid3 fg">
-      <div><label>Panjang</label><input id="rP" type="number" inputmode="decimal" placeholder="cm"></div>
-      <div><label>Lebar</label><input id="rL" type="number" inputmode="decimal" placeholder="cm"></div>
-      <div><label>Tinggi</label><input id="rT" type="number" inputmode="decimal" placeholder="cm"></div>
+    <div class="fg" id="iVarWrap"><label id="iVarLbl">Tipe rak</label>
+      <select id="iVarian"></select>
     </div>
-    <div class="fg mb0"><label>Jumlah level / shaf per rak</label><input id="rLv" type="number" inputmode="numeric" value="5"></div>
+    <div class="fg" id="iNamaWrap" style="display:none"><label>Nama / keterangan</label>
+      <input id="iNama" placeholder="mis. rak kawat mezzanine, meja packing">
+    </div>
+    <div id="iDimWrap">
+      <div class="grid3 fg">
+        <div><label>Panjang</label><input id="iP" type="number" inputmode="decimal" placeholder="cm"></div>
+        <div><label>Lebar</label><input id="iL" type="number" inputmode="decimal" placeholder="cm"></div>
+        <div><label>Tinggi</label><input id="iT" type="number" inputmode="decimal" placeholder="cm"></div>
+      </div>
+      <div class="fg mb0" id="iLvWrap"><label>Jumlah level / shaf per rak</label><input id="iLv" type="number" inputmode="numeric" value="5"></div>
+    </div>
+    <p class="muted mt10 mb0" id="iHint">Ukur 1 rak yang mewakili, lalu isi jumlah rak identik di bawah.</p>
   </div>
 
   <!-- QTY + FILL -->
@@ -383,8 +373,8 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
   <div class="card">
     <h2>Filter</h2>
     <div class="row fg mb0">
-      <div><label>Mode</label><select id="dfMode"><option value="">Semua</option><option>BIN</option><option>NOPACK</option><option>KARTON</option><option>RAK</option></select></div>
-      <div><label>Zona</label><input id="dfZone" placeholder="semua"></div>
+      <div><label>Mode</label><select id="dfMode"><option value="">Semua</option><option>BIN</option><option>KARTON</option><option>NOPACK</option><option>INFRA</option></select></div>
+      <div><label>Rak</label><input id="dfRack" placeholder="semua"></div>
     </div>
   </div>
   <div class="card">
@@ -402,7 +392,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <button class="btn btn-ghost btn-sm" onclick="pullAll()">⬇ Tarik data tim</button>
     </div>
     <div class="btnrow">
-      <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportXlsx()">⬇ XLSX</button>
       <button class="btn btn-ghost btn-sm" onclick="shareWa()">💬 WhatsApp</button>
     </div>
     <div class="divline"></div>
@@ -420,21 +410,18 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <div class="stat accent"><div class="v" id="kOcc">0</div><div class="k">CBM Barang (Occupied)</div></div>
       <div class="stat accent"><div class="v" id="kGross">0</div><div class="k">CBM Ruang Terpakai (Gross)</div></div>
       <div class="stat"><div class="v" id="kUtil">0%</div><div class="k">Utilisasi Bin</div></div>
-      <div class="stat"><div class="v" id="kRakCbm">0</div><div class="k">CBM Envelope Rak</div></div>
+      <div class="stat"><div class="v" id="kEntry">0</div><div class="k">Total Entry CBM</div></div>
     </div>
     <div class="divline"></div>
     <div class="stats">
       <div class="stat"><div class="v" id="kBin">0</div><div class="k">Bin</div></div>
       <div class="stat"><div class="v" id="kKarton">0</div><div class="k">Karton / Tumpukan</div></div>
       <div class="stat"><div class="v" id="kSlot">0</div><div class="k">Item No Package</div></div>
-      <div class="stat"><div class="v" id="kRak">0</div><div class="k">Rak</div></div>
-      <div class="stat"><div class="v" id="kFoot">0</div><div class="k">Footprint Rak (m²)</div></div>
-      <div class="stat"><div class="v" id="kShelf">0</div><div class="k">Luas Shelf (m²)</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>CBM Occupied per Zona</h2>
+    <h2>CBM Occupied per Rak</h2>
     <div class="bars" id="barZone"><p class="muted mb0">Belum ada data.</p></div>
   </div>
 
@@ -446,6 +433,18 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
   <div class="card">
     <h2>Rekap per Ukuran Bin</h2>
     <div class="tblwrap"><table><thead><tr><th>Ukuran Bin</th><th class="num">Qty</th><th class="num">Gross m³</th><th class="num">Occ m³</th><th class="num">Util</th></tr></thead><tbody id="catBody"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Infrastructure</h2>
+    <p class="muted" style="margin-top:-4px">Aset gudang. <b>Tidak</b> termasuk dalam CBM barang di atas.</p>
+    <div class="stats" style="margin-bottom:10px">
+      <div class="stat"><div class="v" id="kRak">0</div><div class="k">Rak</div></div>
+      <div class="stat"><div class="v" id="kBinInfra">0</div><div class="k">Bin (aset)</div></div>
+      <div class="stat"><div class="v" id="kFoot">0</div><div class="k">Footprint Rak (m²)</div></div>
+      <div class="stat"><div class="v" id="kShelf">0</div><div class="k">Luas Shelf (m²)</div></div>
+    </div>
+    <div class="tblwrap"><table><thead><tr><th>Jenis</th><th>Varian</th><th class="num">Qty</th><th>Dimensi</th></tr></thead><tbody id="infraBody"></tbody></table></div>
   </div>
 
   <div class="card">
@@ -492,10 +491,10 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <ol class="small" style="padding-left:18px;margin:0;color:var(--ink-2)">
       <li>Isi <b>Nama PIC</b> &amp; <b>URL Apps Script</b> sekali di awal.</li>
       <li>Cek <b>Katalog Ukuran Bin</b> di Setup — sudah terkalibrasi, jangan diubah.</li>
-      <li>Survey rak dulu pakai mode <b>RAK</b> (1 entry per rak identik) — ini basis kapasitas.</li>
+      <li>Survey rak & aset pakai mode <b>INFRA</b> (1 entry per unit identik) — masuk sheet terpisah, tidak menambah CBM.</li>
       <li>Sapu isi rak pakai mode <b>BIN</b> / <b>NO PACK</b> / <b>KARTON</b>. Bin ukuran tidak standar pakai <b>Bin Custom</b>.</li>
       <li>Area lantai, FOC, Receiving pakai mode <b>KARTON</b> (ukur alas × tinggi tumpukan, % dipakai sebagai kepadatan).</li>
-      <li>Tekan <b>Sync</b> tiap selesai 1 zona (boleh offline dulu, sync belakangan).</li>
+      <li>Tekan <b>Sync</b> tiap selesai 1 rak / area (boleh offline dulu, sync belakangan).</li>
     </ol>
   </div>
 
@@ -511,37 +510,21 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
   <div class="card">
     <h2>Tentang</h2>
-    <p class="small muted mb0">Warehouse PMT - CBM Calculation · v1.4<br>Parts Management — Customer Care Dept · MODENA<br>Survey kapasitas gudang spare parts sebelum relokasi.</p>
+    <p class="small muted mb0">Warehouse PMT - CBM Calculation · v1.5<br>Parts Management — Customer Care Dept · MODENA<br>Survey kapasitas gudang spare parts sebelum relokasi.</p>
   </div>
 </section>
 
 </main>
 </div><!-- /shell -->
 
-<div id="scanWrap">
-  <video id="scanVideo" playsinline muted></video>
-  <div class="scantop">
-    <span class="t">SCAN BIN LOCATOR</span>
-    <button onclick="toggleTorch()" id="torchBtn">🔆 Lampu</button>
-    <button onclick="closeScan()">✕ Tutup</button>
-  </div>
-  <div class="reticle"></div>
-  <div class="scanbot">
-    <div class="msg" id="scanMsg">Menyiapkan kamera...</div>
-    <div class="row2">
-      <button class="btn-gold" onclick="closeScan(true)">Isi Manual</button>
-    </div>
-  </div>
-</div>
-
 <div class="actionbar" id="actionBar">
   <div class="abtop">
-    <span class="n" id="calcMain">0,0000</span><span class="u">m³ <span id="calcLbl">occupied</span></span>
+    <span class="n" id="calcMain">0,0000</span><span class="u"><span id="calcUnit">m³</span> <span id="calcLbl">occupied</span></span>
     <span class="d" id="calcDetail">—</span>
   </div>
   <div class="abbtn">
-    <button class="btn-gold" onclick="saveEntry(false)">SIMPAN</button>
-    <button class="btn-ghost" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.3)" onclick="saveEntry(true)">SIMPAN &amp; LANJUT</button>
+    <button class="btn-gold" id="btnSave" onclick="saveEntry(false)">SIMPAN</button>
+    <button class="btn-ghost" id="btnSaveNext" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.3)" onclick="saveEntry(true)">SIMPAN &amp; LANJUT</button>
   </div>
 </div>
 
@@ -556,24 +539,57 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
 <script>
 /* ============================================================
-   PMT CBM COUNTER — MODENA Parts Management
+   PMT CBM COUNTER — MODENA Parts Management            v1.5
    Single-file. Offline-first (localStorage) + Google Sheets sync.
+
+   Perubahan v1.5:
+   · Zona/Area dihapus. Lokasi = Rak (kiri) + Bin Locator (kanan).
+     Agregasi & filter yang dulu per-zona sekarang per-rak, dengan
+     fallback ke zone lama supaya data tarikan tim tetap terbaca.
+   · Tombol & seluruh kode scanner barcode dihapus (locator diketik).
+   · Mode RAK -> INFRA (Infrastructure): rak, bin, lampu, meja, dll.
+     TIDAK masuk hitungan CBM, dan disimpan di sheet INFRA_DATA
+     yang terpisah dari CBM_DATA.
+   · 5 Entry Terakhir menampilkan tipe, qty, % isi + tombol Edit.
+     Edit menimpa baris lama (Code.gs sekarang upsert by id).
+   · Export CSV -> XLSX, dibuat sendiri tanpa library/CDN supaya
+     tetap jalan offline di gudang. 2 sheet: CBM & INFRA.
+   · Kolom tanggal & jam dipisah dan diambil dari waktu LOKAL HP.
+     Sebelumnya hanya ada kolom ts berisi new Date().toISOString()
+     yaitu UTC — di WIB jamnya tampak mundur 7 jam.
    ============================================================ */
 
 var LS_ENTRIES='pmt_cbm_entries_v1', LS_CFG='pmt_cbm_cfg_v1', LS_CAT='pmt_cbm_catalog_v3';
 
-/* Dimensi (cm) — HASIL UKUR FISIK LAPANGAN, 03 Sep 2026.
-   Tidak dibedakan warna, hanya ukuran. Bin non-standar pakai tombol CUSTOM. */
+/* Dimensi (cm) — HASIL UKUR FISIK LAPANGAN, 03 Sep 2026. */
 var DEFAULT_CATALOG=[
  {id:'s', nama:'Bin Kecil',  ket:'S', p:46, l:30, t:18, cal:true},
  {id:'m', nama:'Bin Sedang', ket:'M', p:47, l:35, t:25, cal:true},
  {id:'l', nama:'Bin Besar',  ket:'L', p:60, l:42, t:37, cal:true}
 ];
 var CUSTOM_ID='CUSTOM';
-
 var FILL_PRESETS=[0,10,25,50,75,90,100,110,125,150];
 
-var state={mode:'BIN', catId:'c1', fill:100};
+/* Varian per jenis infrastructure. 'Bin' diisi dinamis dari katalog. */
+var INFRA_VARIAN={
+ 'Rak'                  :['Rak besi siku lubang (light duty)','Rak heavy duty / pallet racking',
+                          'Rak sekat kayu (glass area)','Rak louvre bin (bin miring)',
+                          'Rak kawat / mezzanine','Lainnya'],
+ 'Bin'                  :[],
+ 'Lampu'                :['Lampu LED','Lampu Neon / TL','Lampu sorot / Floodlight','Lainnya'],
+ 'Meja'                 :['Meja packing','Meja kerja / administrasi','Meja sortir','Lainnya'],
+ 'Kursi'                :['Kursi kerja','Kursi tinggi / bar','Lainnya'],
+ 'Trolley / Hand pallet':['Trolley barang','Hand pallet','Stacker manual','Lainnya'],
+ 'Tangga'               :['Tangga lipat','Tangga beroda / platform','Lainnya'],
+ 'Lemari / Locker'      :['Lemari arsip','Locker karyawan','Lainnya'],
+ 'APAR'                 :['APAR powder','APAR CO2','Hydrant box','Lainnya'],
+ 'Kipas / Blower'       :['Kipas dinding','Kipas berdiri','Blower / exhaust','Lainnya'],
+ 'Lainnya'              :[]
+};
+/* Jenis yang WAJIB punya dimensi */
+var INFRA_NEED_DIM={'Rak':1,'Meja':1,'Lemari / Locker':1};
+
+var state={mode:'BIN', catId:'c1', fill:100, editId:null};
 var entries=[], cfg={pic:'',wh:'',url:''}, catalog=[];
 
 /* ---------------- storage ---------------- */
@@ -598,17 +614,36 @@ function toast(msg,isErr){
   clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; },2200);
 }
 function catById(id){ for(var i=0;i<catalog.length;i++){ if(catalog[i].id===id) return catalog[i]; } return null; }
-
-/* volume 1 unit (m3) dari cm */
+function catByName(nm){ for(var i=0;i<catalog.length;i++){ if(catalog[i].nama===nm) return catalog[i]; } return null; }
 function volM3(p,l,t){ return (num(p)*num(l)*num(t))/1000000; }
 
-/* ---------------- current form -> draft entry ---------------- */
+/* Waktu LOKAL HP (WIB), bukan UTC. Ini yang bikin jam di Sheets salah sebelumnya. */
+function p2(n){ return (n<10?'0':'')+n; }
+function nowParts(){
+  var d=new Date();
+  return { iso:d.toISOString(),
+           tanggal:d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()),
+           jam:p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds()) };
+}
+
+/* INFRA termasuk entry lama bermode 'RAK' supaya tidak mengotori CBM. */
+function isInfra(e){ return e.mode==='INFRA' || e.mode==='RAK'; }
+function infraJenis(e){ return (e.mode==='RAK')?'Rak':(e.tipe||'Lainnya'); }
+function infraVarian(e){ return (e.mode==='RAK')?(e.tipe||'-'):(e.isi||'-'); }
+function lokTxt(e){
+  var r=e.rack||e.zone||'', l=e.locator||'';
+  return (r||l) ? (r + (r&&l?' · ':'') + l) : '—';
+}
+function grpKey(e){ return e.rack || e.zone || '(tanpa rak)'; }
+
+/* ---------------- form -> draft entry ---------------- */
 function readForm(){
   var m=state.mode, qty=Math.max(0,num($('fQty').value)), fill=num($('fFill').value);
+  var tp=nowParts();
   var e={
-    id:uid(), ts:new Date().toISOString(), pic:cfg.pic||'-', wh:cfg.wh||'-',
-    mode:m, zone:($('fZone').value||'').trim(), rack:($('fRack').value||'').trim(),
-    locator:($('fLoc').value||'').trim(),
+    id:uid(), ts:tp.iso, tanggal:tp.tanggal, jam:tp.jam,
+    pic:cfg.pic||'-', wh:cfg.wh||'-',
+    mode:m, zone:'', rack:($('fRack').value||'').trim(), locator:($('fLoc').value||'').trim(),
     tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
     unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false
   };
@@ -621,19 +656,32 @@ function readForm(){
       e.tipe=c.nama; e.p=c.p; e.l=c.l; e.t=c.t; e.isi='';
     }
   } else if(m==='NOPACK'){
-    e.tipe='No Package — '+$('sIsi').value; e.p=num($('sP').value); e.l=num($('sL').value); e.t=num($('sT').value); e.isi=$('sIsi').value;
+    e.tipe='No Package — '+$('sIsi').value; e.isi=$('sIsi').value;
+    e.p=num($('sP').value); e.l=num($('sL').value); e.t=num($('sT').value);
   } else if(m==='KARTON'){
-    e.tipe='Karton / Tumpukan'; e.p=num($('kP').value); e.l=num($('kL').value); e.t=num($('kT').value); e.isi=$('kIsi').value;
-  } else if(m==='RAK'){
-    e.tipe=$('rTipe').value; e.p=num($('rP').value); e.l=num($('rL').value); e.t=num($('rT').value);
-    e.levels=num($('rLv').value); e.fill=0;
+    e.tipe='Karton / Tumpukan'; e.isi=$('kIsi').value;
+    e.p=num($('kP').value); e.l=num($('kL').value); e.t=num($('kT').value);
+  } else if(m==='INFRA'){
+    var j=$('iJenis').value, vr=$('iVarian').value||'';
+    var isBin=(j==='Bin'), isCustomBin=(isBin && vr==='Bin Custom');
+    e.tipe=j;
+    e.isi=(j==='Lainnya'||!infraVarianList(j).length) ? (($('iNama').value||'').trim()||'Lainnya') : vr;
+    if(isBin && !isCustomBin){
+      var cb=catByName(vr); if(cb){ e.p=cb.p; e.l=cb.l; e.t=cb.t; }
+    } else if(infraShowDim(j,vr)){
+      e.p=num($('iP').value); e.l=num($('iL').value); e.t=num($('iT').value);
+    } /* jenis tanpa dimensi (Lampu, APAR, ...) tetap 0 — jangan bawa sisa input */
+    e.levels=(j==='Rak')? num($('iLv').value) : 0;
+    e.fill=0;
   }
-  e.unitCbm  = volM3(e.p,e.l,e.t);
-  if(m==='RAK'){
-    e.grossCbm = e.unitCbm*e.qty;          // envelope rak = kapasitas, BUKAN barang
+  e.unitCbm = volM3(e.p,e.l,e.t);
+  if(m==='INFRA'){
+    e.grossCbm = e.unitCbm*e.qty;   /* envelope, BUKAN volume barang */
     e.occCbm   = 0;
-    e.footM2   = (e.p*e.l/10000)*e.qty;
-    e.shelfM2  = (e.p*e.l/10000)*e.levels*e.qty;
+    if(e.tipe==='Rak'){
+      e.footM2  = (e.p*e.l/10000)*e.qty;
+      e.shelfM2 = (e.p*e.l/10000)*e.levels*e.qty;
+    }
   } else {
     e.grossCbm = e.unitCbm*e.qty;
     e.occCbm   = e.grossCbm*(e.fill/100);
@@ -642,19 +690,23 @@ function readForm(){
 }
 
 function renderCalc(){
-  var e=readForm();
-  var isRak=(e.mode==='RAK');
-  $('calcLbl').textContent = isRak? 'kapasitas rak' : 'occupied';
-  $('calcMain').textContent = fmt(isRak? e.grossCbm : e.occCbm, 4);
-  var d;
-  if(isRak){
-    d = fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+' rak · '+fmtInt(e.levels)+' lvl · '+fmt(e.footM2,1)+' m² footprint';
+  var e=readForm(), inf=(e.mode==='INFRA');
+  if(inf){
+    $('calcUnit').textContent='unit';
+    $('calcLbl').textContent=(e.tipe||'infra').toLowerCase();
+    $('calcMain').textContent=fmtInt(e.qty);
+    var dim=(e.unitCbm>0)? (fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)) : 'tanpa dimensi';
+    $('calcDetail').textContent=(e.isi||'-')+' · '+dim+
+      (e.tipe==='Rak'? (' · '+fmtInt(e.levels)+' lvl · '+fmt(e.footM2,1)+' m²') : '');
   } else {
-    d = fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+' × '+fmt(e.fill,0)+'% · gross '+fmt(e.grossCbm,4);
+    $('calcUnit').textContent='m³';
+    $('calcLbl').textContent='occupied';
+    $('calcMain').textContent=fmt(e.occCbm,4);
+    $('calcDetail').textContent=fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+
+      ' × '+fmt(e.fill,0)+'% · gross '+fmt(e.grossCbm,4);
   }
-  $('calcDetail').textContent = d;
-  var z=($('fZone').value||'').trim(), rk=($('fRack').value||'').trim();
-  $('locChip').textContent = (z||rk) ? (z + (z&&rk?' / ':'') + rk) : 'tanpa lokasi';
+  var rk=($('fRack').value||'').trim(), lc=($('fLoc').value||'').trim();
+  $('locChip').textContent=(rk||lc) ? (rk + (rk&&lc?' · ':'') + lc) : 'tanpa lokasi';
 }
 
 function toggleLoc(){
@@ -664,47 +716,170 @@ function toggleLoc(){
   $('locChev').textContent = open?'ubah ▼':'tutup ▲';
 }
 
-/* ---------------- save ---------------- */
+/* ---------------- form infrastructure ---------------- */
+function infraVarianList(j){
+  if(j==='Bin'){
+    var a=[]; for(var i=0;i<catalog.length;i++) a.push(catalog[i].nama);
+    a.push('Bin Custom'); return a;
+  }
+  return INFRA_VARIAN[j]||[];
+}
+/* Jenis yang menampilkan (dan karena itu MEMAKAI) kolom dimensi.
+   Wajib dipakai juga di readForm: tanpa ini, dimensi sisa dari jenis
+   sebelumnya ikut tersimpan — mis. Lampu terbawa 47x35x25 dari Bin. */
+function infraShowDim(j,vr){
+  return !!INFRA_NEED_DIM[j] || (j==='Bin' && vr==='Bin Custom')
+         || j==='Lainnya' || !infraVarianList(j).length;
+}
+function renderInfraForm(){
+  var j=$('iJenis').value, list=infraVarianList(j), sel=$('iVarian'), cur=sel.value, h='';
+  for(var i=0;i<list.length;i++) h+='<option>'+esc(list[i])+'</option>';
+  sel.innerHTML=h;
+  if(list.indexOf(cur)>=0) sel.value=cur;
+  $('iVarWrap').style.display = list.length? 'block':'none';
+  $('iVarLbl').textContent = (j==='Bin')?'Ukuran bin':(j==='Rak')?'Tipe rak':'Tipe / varian';
+
+  var isBin=(j==='Bin'), isCustomBin=(isBin && sel.value==='Bin Custom');
+  $('iDimWrap').style.display  = infraShowDim(j,sel.value)? 'block':'none';
+  $('iLvWrap').style.display   = (j==='Rak')? 'block':'none';
+  $('iNamaWrap').style.display = (j==='Lainnya'||!list.length)? 'block':'none';
+
+  if(isBin && !isCustomBin){
+    var c=catByName(sel.value);
+    if(c){ $('iP').value=c.p; $('iL').value=c.l; $('iT').value=c.t; }
+  }
+  var hint={
+    'Rak'  :'Ukur 1 rak yang mewakili, lalu isi jumlah rak identik di bawah. Level dipakai untuk hitung luas shelf.',
+    'Bin'  :'Pilih ukuran bin — dimensi otomatis dari katalog. Ukuran tak standar pakai Bin Custom.',
+    'Lampu':'Cukup pilih jenis lampu, lalu isi jumlahnya. Tidak perlu dimensi.',
+    'Meja' :'Ukur meja, lalu isi jumlah meja identik.'
+  };
+  $('iHint').textContent = hint[j] || 'Isi jumlah unit. Dimensi opsional — kosongkan kalau tidak relevan.';
+  renderCalc();
+}
+
+/* ---------------- simpan / edit ---------------- */
 function saveEntry(keep){
   var e=readForm();
   if(e.qty<=0){ toast('Qty harus > 0',true); return; }
-  if(e.unitCbm<=0){ toast('Dimensi belum lengkap',true); return; }
-  if(e.mode!=='RAK' && e.fill<=0){ toast('% isi harus > 0',true); return; }
+  if(e.mode==='INFRA'){
+    var needDim = !!INFRA_NEED_DIM[e.tipe] || (e.tipe==='Bin');
+    if(needDim && e.unitCbm<=0){ toast('Dimensi '+e.tipe.toLowerCase()+' belum lengkap',true); return; }
+  } else {
+    if(e.unitCbm<=0){ toast('Dimensi belum lengkap',true); return; }
+    if(e.fill<=0){ toast('% isi harus > 0',true); return; }
+  }
+
+  if(state.editId){
+    var idx=-1;
+    for(var i=0;i<entries.length;i++){ if(entries[i].id===state.editId){ idx=i; break; } }
+    if(idx<0){ toast('Entry yang diedit sudah tidak ada',true); cancelEdit(); return; }
+    var old=entries[idx];
+    /* id & waktu asli dipertahankan supaya baris di Sheets ditimpa, bukan digandakan */
+    e.id=old.id; e.ts=old.ts; e.tanggal=old.tanggal||e.tanggal; e.jam=old.jam||e.jam;
+    e.synced=false;
+    entries[idx]=e;
+    state.editId=null; $('editBanner').style.display='none';
+    $('btnSave').textContent='SIMPAN'; $('btnSaveNext').style.display='';
+    lsSet(LS_ENTRIES,entries);
+    toast('Entry diperbarui — jangan lupa Sync');
+    $('fLoc').value=''; $('fQty').value=1; $('fNote').value='';
+    renderAll(); return;
+  }
+
   entries.push(e); lsSet(LS_ENTRIES,entries);
-  /* zona & rak sengaja TIDAK dikosongkan, dan diingat walau app ditutup */
-  cfg.lastZone=e.zone; cfg.lastRack=e.rack; lsSet(LS_CFG,cfg);
-  toast('Tersimpan · '+fmt(e.mode==='RAK'?e.grossCbm:e.occCbm,4)+' m³');
+  cfg.lastRack=e.rack; lsSet(LS_CFG,cfg);
+  toast('Tersimpan · '+(e.mode==='INFRA'? (fmtInt(e.qty)+' unit '+e.tipe) : (fmt(e.occCbm,4)+' m³')));
   if(!keep){ $('fNote').value=''; }
-  $('fLoc').value='';   /* locator unik per bin -> selalu dikosongkan */
+  $('fLoc').value='';
   $('fQty').value=1;
   renderAll();
 }
 
-function bumpQty(d){
-  var v=Math.max(1,num($('fQty').value)+d); $('fQty').value=v; renderCalc();
+function editEntry(id){
+  var e=null;
+  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){ e=entries[i]; break; } }
+  if(!e){ toast('Entry tidak ditemukan',true); return; }
+
+  setMode(isInfra(e)? 'INFRA' : e.mode);
+  $('fRack').value=e.rack||e.zone||'';
+  $('fLoc').value=e.locator||'';
+  $('fQty').value=e.qty; $('fFill').value=e.fill; $('fNote').value=e.note||'';
+
+  if(e.mode==='BIN'){
+    var c=catByName(e.tipe);
+    if(c){ state.catId=c.id; }
+    else { state.catId=CUSTOM_ID; $('cP').value=e.p; $('cL').value=e.l; $('cT').value=e.t; $('cNama').value=e.isi||''; }
+    renderCatButtons();
+  } else if(e.mode==='NOPACK'){
+    $('sIsi').value=e.isi||'Lainnya'; $('sP').value=e.p; $('sL').value=e.l; $('sT').value=e.t;
+  } else if(e.mode==='KARTON'){
+    $('kIsi').value=e.isi||'Lainnya'; $('kP').value=e.p; $('kL').value=e.l; $('kT').value=e.t;
+  } else if(isInfra(e)){
+    $('iJenis').value=infraJenis(e);
+    renderInfraForm();
+    var vl=infraVarianList(infraJenis(e));
+    if(vl.indexOf(infraVarian(e))>=0) $('iVarian').value=infraVarian(e);
+    else { $('iNama').value=infraVarian(e); }
+    $('iP').value=e.p; $('iL').value=e.l; $('iT').value=e.t; $('iLv').value=e.levels||5;
+    renderInfraForm();
+  }
+
+  state.editId=id;
+  $('editInfo').textContent=(isInfra(e)?'INFRA':e.mode)+' · '+(e.tipe||'-')+' · '+fmtInt(e.qty)+'×';
+  $('editBanner').style.display='block';
+  $('btnSave').textContent='UPDATE ENTRY';
+  $('btnSaveNext').style.display='none';
+  renderFillChips(); renderCalc();
+  window.scrollTo(0,0);
+  toast('Entry dimuat — ubah lalu tekan UPDATE');
 }
 
-/* ---------------- aggregation ---------------- */
+function cancelEdit(){
+  state.editId=null;
+  $('editBanner').style.display='none';
+  $('btnSave').textContent='SIMPAN';
+  $('btnSaveNext').style.display='';
+  $('fQty').value=1; $('fLoc').value=''; $('fNote').value='';
+  renderCalc(); toast('Edit dibatalkan');
+}
+
+function bumpQty(d){ var v=Math.max(1,num($('fQty').value)+d); $('fQty').value=v; renderCalc(); }
+
+function delEntry(id){
+  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){ entries.splice(i,1); break; } }
+  if(state.editId===id) cancelEdit();
+  lsSet(LS_ENTRIES,entries); renderAll(); toast('Entry dihapus di HP ini');
+}
+
+/* ---------------- agregasi ---------------- */
 function agg(list){
-  var a={occ:0,gross:0,rakCbm:0,foot:0,shelf:0,nBin:0,nKarton:0,nSlot:0,nRak:0,
-         byZone:{},byMode:{},byCat:{}};
+  var a={occ:0,gross:0,nEntry:0,nBin:0,nKarton:0,nSlot:0,
+         rakCbm:0,foot:0,shelf:0,nRak:0,nBinInfra:0,nInfra:0,
+         byRack:{},byMode:{},byCat:{},byInfra:{}};
   for(var i=0;i<list.length;i++){
     var e=list[i];
-    if(e.mode==='RAK'){
-      a.rakCbm+=e.grossCbm; a.foot+=e.footM2||0; a.shelf+=e.shelfM2||0; a.nRak+=e.qty;
-    } else {
-      a.occ+=e.occCbm; a.gross+=e.grossCbm;
-      if(e.mode==='BIN') a.nBin+=e.qty;
-      else if(e.mode==='KARTON') a.nKarton+=e.qty;
-      else if(e.mode==='NOPACK') a.nSlot+=e.qty;
-      var z=e.zone||'(kosong)';
-      a.byZone[z]=(a.byZone[z]||0)+e.occCbm;
-      a.byMode[e.mode]=(a.byMode[e.mode]||0)+e.occCbm;
-      if(e.mode==='BIN'){
-        var k=e.tipe||'-';
-        if(!a.byCat[k]) a.byCat[k]={qty:0,gross:0,occ:0};
-        a.byCat[k].qty+=e.qty; a.byCat[k].gross+=e.grossCbm; a.byCat[k].occ+=e.occCbm;
-      }
+    if(isInfra(e)){
+      var j=infraJenis(e), v=infraVarian(e), k=j+' ▸ '+v;
+      if(!a.byInfra[k]) a.byInfra[k]={jenis:j,varian:v,qty:0,p:e.p,l:e.l,t:e.t,levels:e.levels};
+      a.byInfra[k].qty+=e.qty;
+      a.nInfra+=e.qty;
+      if(j==='Rak'){ a.rakCbm+=e.grossCbm||0; a.foot+=e.footM2||0; a.shelf+=e.shelfM2||0; a.nRak+=e.qty; }
+      if(j==='Bin') a.nBinInfra+=e.qty;
+      continue;
+    }
+    a.nEntry++;
+    a.occ+=e.occCbm; a.gross+=e.grossCbm;
+    if(e.mode==='BIN') a.nBin+=e.qty;
+    else if(e.mode==='KARTON') a.nKarton+=e.qty;
+    else if(e.mode==='NOPACK') a.nSlot+=e.qty;
+    var g=grpKey(e);
+    a.byRack[g]=(a.byRack[g]||0)+e.occCbm;
+    a.byMode[e.mode]=(a.byMode[e.mode]||0)+e.occCbm;
+    if(e.mode==='BIN'){
+      var ck=e.tipe||'-';
+      if(!a.byCat[ck]) a.byCat[ck]={qty:0,gross:0,occ:0};
+      a.byCat[ck].qty+=e.qty; a.byCat[ck].gross+=e.grossCbm; a.byCat[ck].occ+=e.occCbm;
     }
   }
   return a;
@@ -756,28 +931,36 @@ function setFill(v){ $('fFill').value=v; renderFillChips(); renderCalc(); }
 function renderRecent(){
   var last=entries.slice(-5).reverse();
   if(!last.length){ $('recentList').innerHTML='<p class="muted mb0">Belum ada entry.</p>'; return; }
-  var h='<div class="tblwrap"><table style="min-width:0"><tbody>';
+  var h='';
   for(var i=0;i<last.length;i++){
-    var e=last[i];
-    h+='<tr><td><span class="tag t-'+e.mode+'">'+e.mode+'</span></td>'+
-       '<td>'+(esc(e.zone||'')+(e.rack?'/'+esc(e.rack):'')||'—')+'</td>'+
-       '<td class="num">'+fmtInt(e.qty)+'×</td>'+
-       '<td class="num"><b>'+fmt(e.mode==='RAK'?e.grossCbm:e.occCbm,4)+'</b></td>'+
-       '<td><button class="btn btn-ghost btn-sm" onclick="delEntry(\''+e.id+'\')">✕</button></td></tr>';
+    var e=last[i], inf=isInfra(e), md=inf?'INFRA':e.mode;
+    var tipeTxt = inf ? (infraJenis(e)+' · '+infraVarian(e))
+                      : (e.tipe + (e.isi && e.isi!==e.tipe ? ' · '+e.isi : ''));
+    if(e.unitCbm>0) tipeTxt += ' · '+fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0);
+    var val = inf ? (fmtInt(e.qty)+' unit') : (fmt(e.occCbm,4)+' m³');
+    var meta = lokTxt(e)+' · '+fmtInt(e.qty)+'× · '+(inf?'—':fmt(e.fill,0)+'%');
+    h+='<div style="border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-bottom:7px;background:#fff'+
+       (state.editId===e.id?';border-color:var(--gold-500);box-shadow:0 0 0 2px rgba(197,160,72,.25)':'')+'">'+
+       '<div style="display:flex;align-items:flex-start;gap:7px">'+
+         '<span class="tag t-'+md+'">'+md+'</span>'+
+         '<span style="flex:1;font-weight:700;font-size:12.5px;line-height:1.3">'+esc(tipeTxt)+'</span>'+
+         '<span style="font-weight:800;font-size:12.5px;white-space:nowrap">'+val+'</span>'+
+       '</div>'+
+       '<div style="display:flex;align-items:center;gap:6px;margin-top:6px">'+
+         '<span class="muted" style="flex:1">'+esc(meta)+'</span>'+
+         '<button class="btn btn-ghost btn-sm" style="flex:0 0 42px" title="Edit" onclick="editEntry(\''+e.id+'\')">✎</button>'+
+         '<button class="btn btn-ghost btn-sm" style="flex:0 0 42px" title="Hapus" onclick="delEntry(\''+e.id+'\')">✕</button>'+
+       '</div></div>';
   }
-  $('recentList').innerHTML=h+'</tbody></table></div>';
-}
-
-function delEntry(id){
-  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){ entries.splice(i,1); break; } }
-  lsSet(LS_ENTRIES,entries); renderAll(); toast('Entry dihapus');
+  $('recentList').innerHTML=h;
 }
 
 function filtered(){
-  var m=$('dfMode').value, z=($('dfZone').value||'').trim().toLowerCase();
+  var m=$('dfMode').value, r=($('dfRack').value||'').trim().toLowerCase();
   return entries.filter(function(e){
-    if(m && e.mode!==m) return false;
-    if(z && (e.zone||'').toLowerCase().indexOf(z)<0) return false;
+    var md=isInfra(e)?'INFRA':e.mode;
+    if(m && md!==m) return false;
+    if(r && grpKey(e).toLowerCase().indexOf(r)<0) return false;
     return true;
   });
 }
@@ -786,17 +969,18 @@ function renderData(){
   var list=filtered().slice().reverse(), h='';
   $('dCount').textContent=fmtInt(list.length);
   for(var i=0;i<list.length;i++){
-    var e=list[i];
-    var det=e.tipe+(e.isi&&e.isi!==e.tipe?' · '+e.isi:'')+' · '+e.p+'×'+e.l+'×'+e.t;
+    var e=list[i], inf=isInfra(e), md=inf?'INFRA':e.mode;
+    var det = inf ? (infraJenis(e)+' · '+infraVarian(e)) : (e.tipe+(e.isi&&e.isi!==e.tipe?' · '+e.isi:''));
+    if(e.unitCbm>0) det += ' · '+e.p+'×'+e.l+'×'+e.t;
     h+='<tr><td><span class="dot '+(e.synced?'s':'u')+'"></span>'+(list.length-i)+'</td>'+
-       '<td><span class="tag t-'+e.mode+'">'+e.mode+'</span></td>'+
-       '<td>'+((esc(e.zone||'')+(e.rack?' / '+esc(e.rack):'')+(e.locator?' · '+esc(e.locator):''))||'—')+'</td>'+
+       '<td><span class="tag t-'+md+'">'+md+'</span></td>'+
+       '<td>'+esc(lokTxt(e))+'</td>'+
        '<td>'+esc(det)+'</td>'+
-       '<td class="num">'+fmtInt(e.qty)+'</td><td class="num">'+(e.mode==='RAK'?'—':fmt(e.fill,0)+'%')+'</td>'+
-       '<td class="num">'+fmt(e.grossCbm,4)+'</td>'+
-       '<td class="num"><b>'+(e.mode==='RAK'?'—':fmt(e.occCbm,4))+'</b></td>'+
+       '<td class="num">'+fmtInt(e.qty)+'</td><td class="num">'+(inf?'—':fmt(e.fill,0)+'%')+'</td>'+
+       '<td class="num">'+(inf?'—':fmt(e.grossCbm,4))+'</td>'+
+       '<td class="num"><b>'+(inf?'—':fmt(e.occCbm,4))+'</b></td>'+
        '<td>'+esc(e.pic)+'</td>'+
-       '<td><button class="btn btn-ghost btn-sm" onclick="delEntry(\''+e.id+'\')">✕</button></td></tr>';
+       '<td><button class="btn btn-ghost btn-sm" onclick="editEntry(\''+e.id+'\')">✎</button></td></tr>';
   }
   $('dBody').innerHTML=h||'<tr><td colspan="10" class="muted">Tidak ada data.</td></tr>';
 }
@@ -818,15 +1002,17 @@ function renderSummary(){
   $('kOcc').textContent=fmt(a.occ,2);
   $('kGross').textContent=fmt(a.gross,2);
   $('kUtil').textContent=a.gross>0? Math.round(a.occ/a.gross*100)+'%':'—';
-  $('kRakCbm').textContent=fmt(a.rakCbm,2);
+  $('kEntry').textContent=fmtInt(a.nEntry);
   $('kBin').textContent=fmtInt(a.nBin);
   $('kKarton').textContent=fmtInt(a.nKarton);
   $('kSlot').textContent=fmtInt(a.nSlot);
   $('kRak').textContent=fmtInt(a.nRak);
+  $('kBinInfra').textContent=fmtInt(a.nBinInfra);
   $('kFoot').textContent=fmt(a.foot,1);
   $('kShelf').textContent=fmt(a.shelf,1);
-  bars($('barZone'),a.byZone,false);
+  bars($('barZone'),a.byRack,false);
   bars($('barMode'),a.byMode,true);
+
   var keys=Object.keys(a.byCat).sort(function(x,y){ return a.byCat[y].occ-a.byCat[x].occ; }), h='';
   for(var i=0;i<keys.length;i++){
     var c=a.byCat[keys[i]];
@@ -834,6 +1020,14 @@ function renderSummary(){
        '<td class="num"><b>'+fmt(c.occ,3)+'</b></td><td class="num">'+(c.gross>0?Math.round(c.occ/c.gross*100)+'%':'—')+'</td></tr>';
   }
   $('catBody').innerHTML=h||'<tr><td colspan="5" class="muted">Belum ada data BIN.</td></tr>';
+
+  var ik=Object.keys(a.byInfra).sort(function(x,y){ return a.byInfra[y].qty-a.byInfra[x].qty; }), ih='';
+  for(var k=0;k<ik.length;k++){
+    var it=a.byInfra[ik[k]];
+    var dim=(num(it.p)>0)? (fmt(it.p,0)+'×'+fmt(it.l,0)+'×'+fmt(it.t,0)+' cm'+(it.levels?' · '+fmtInt(it.levels)+' lvl':'')) : '—';
+    ih+='<tr><td>'+esc(it.jenis)+'</td><td>'+esc(it.varian)+'</td><td class="num"><b>'+fmtInt(it.qty)+'</b></td><td>'+dim+'</td></tr>';
+  }
+  $('infraBody').innerHTML=ih||'<tr><td colspan="4" class="muted">Belum ada data Infrastructure.</td></tr>';
   renderSim(a);
 }
 
@@ -841,11 +1035,11 @@ function renderSim(a){
   var grow=num($('simGrow').value)/100, tgt=num($('simFill').value)/100;
   var dens=num($('simDens').value)/100, hgt=num($('simH').value), aisle=num($('simAisle').value);
   if(tgt<=0) tgt=0.8; if(dens<=0) dens=0.55; if(hgt<=0) hgt=2.5; if(aisle<=0) aisle=1.8;
-  var vBarang = a.occ*(1+grow);        // volume barang + growth
-  var vContainer = vBarang/tgt;        // volume container yang dibutuhkan
-  var vRak = vContainer/dens;          // volume envelope rak
-  var luasRak = vRak/hgt;              // m2 footprint rak
-  var luasLantai = luasRak*aisle;      // + gang, staging, office
+  var vBarang = a.occ*(1+grow);
+  var vContainer = vBarang/tgt;
+  var vRak = vContainer/dens;
+  var luasRak = vRak/hgt;
+  var luasLantai = luasRak*aisle;
   $('simVol').textContent=fmt(vRak,1);
   $('simArea').textContent=fmt(luasLantai,0);
   $('simDetail').textContent='Barang '+fmt(a.occ,1)+' m³ +'+Math.round(grow*100)+'% = '+fmt(vBarang,1)+
@@ -876,7 +1070,7 @@ function renderCatEdit(){
 }
 function editCat(i,f,v){
   catalog[i][f]=(f==='nama')?v:num(v); lsSet(LS_CAT,catalog);
-  renderCatButtons(); renderCalc(); renderHeader();
+  renderCatButtons(); renderInfraForm(); renderCalc(); renderHeader();
 }
 function toggleCal(i){ catalog[i].cal=!catalog[i].cal; lsSet(LS_CAT,catalog); renderCatEdit(); renderCatButtons(); }
 function delCat(i){
@@ -890,16 +1084,15 @@ function addCat(){
   lsSet(LS_CAT,catalog); renderCatEdit(); renderCatButtons();
 }
 
-function renderZoneList(){
+function renderRackList(){
   var seen={},h='';
-  for(var i=0;i<entries.length;i++){ if(entries[i].zone) seen[entries[i].zone]=1; }
-  ['A','B','C','D','FOC AREA','RECEIVING','GLASS AREA','COOLING','MEZZANINE','LANTAI'].forEach(function(z){ seen[z]=1; });
+  for(var i=0;i<entries.length;i++){ var g=entries[i].rack||entries[i].zone; if(g) seen[g]=1; }
   Object.keys(seen).forEach(function(z){ h+='<option value="'+esc(z)+'">'; });
-  $('zoneList').innerHTML=h;
+  $('rackList').innerHTML=h;
 }
 
 function renderAll(){
-  renderHeader(); renderRecent(); renderData(); renderSummary(); renderZoneList(); renderCalc();
+  renderHeader(); renderRecent(); renderData(); renderSummary(); renderRackList(); renderCalc();
 }
 
 /* ---------------- mode switching ---------------- */
@@ -908,16 +1101,16 @@ function setMode(m){
   var tabs=document.querySelectorAll('#modeTabs .mode');
   for(var i=0;i<tabs.length;i++) tabs[i].className='mode'+(tabs[i].getAttribute('data-mode')===m?' on':'');
   $('boxBin').style.display    = (m==='BIN')?'block':'none';
-  $('boxSlot').style.display   = (m==='NOPACK')?'block':'none';
   $('boxKarton').style.display = (m==='KARTON')?'block':'none';
-  $('boxRak').style.display    = (m==='RAK')?'block':'none';
-  $('fillWrap').style.display  = (m==='RAK')?'none':'block';
+  $('boxSlot').style.display   = (m==='NOPACK')?'block':'none';
+  $('boxInfra').style.display  = (m==='INFRA')?'block':'none';
+  $('fillWrap').style.display  = (m==='INFRA')?'none':'block';
   var lbl={BIN:'Jumlah bin identik (qty)',NOPACK:'Jumlah slot identik (qty)',
-           KARTON:'Jumlah box identik (qty) — tumpukan isi 1',RAK:'Jumlah rak identik (qty)'};
+           KARTON:'Jumlah box identik (qty) — tumpukan isi 1',INFRA:'Jumlah unit identik (qty)'};
   $('qtyLbl').textContent=lbl[m];
   $('fillLbl').textContent=(m==='KARTON')?'Persentase isi / kepadatan tumpukan':'Persentase isi';
-  $('qtyHead').textContent=(m==='RAK')?'Jumlah Rak':'Jumlah & % Isi';
-  renderCalc();
+  $('qtyHead').textContent=(m==='INFRA')?'Jumlah Unit':'Jumlah & % Isi';
+  if(m==='INFRA') renderInfraForm(); else renderCalc();
 }
 
 /* ---------------- config ---------------- */
@@ -931,223 +1124,264 @@ function saveCfg(){
 /* ---------------- sync ---------------- */
 function chunkArr(a,n){ var o=[]; for(var i=0;i<a.length;i+=n) o.push(a.slice(i,i+n)); return o; }
 
-/* Kirim data ke Sheets.
-   PENTING: Apps Script menjawab POST dengan redirect 302 ke script.googleusercontent.com,
-   dan respons setelah redirect itu sering TIDAK membawa header CORS. Akibatnya data
-   BERHASIL tertulis di Sheet tapi fetch() melempar error, sehingga entry tetap dianggap
-   "pending" dan user melihat "Gagal sync" padahal sukses.
-   Solusi: kirim pakai mode:'no-cors' (fire-and-forget), lalu VERIFIKASI dengan GET
-   ?action=list yang memang lolos CORS. Yang dipercaya adalah isi Sheet, bukan respons POST. */
+/* Baris INFRA dikirim ke sheet INFRA_DATA dengan skema sendiri. */
+function infraRow(e){
+  return { id:e.id, ts:e.ts, tanggal:e.tanggal||'', jam:e.jam||'',
+           pic:e.pic, wh:e.wh, jenis:infraJenis(e), varian:infraVarian(e),
+           rack:e.rack||e.zone||'', locator:e.locator||'',
+           p:e.p, l:e.l, t:e.t, levels:e.levels, qty:e.qty,
+           volM3:e.grossCbm, footM2:e.footM2, shelfM2:e.shelfM2, note:e.note||'' };
+}
+
+/* PENTING: Apps Script menjawab POST dengan redirect 302 ke script.googleusercontent.com,
+   dan respons setelah redirect itu sering TIDAK membawa header CORS. Data BERHASIL tertulis
+   tapi fetch() melempar error, sehingga entry tetap dianggap "pending" dan user melihat
+   "Gagal sync" padahal sukses. Solusi: POST mode:'no-cors' (fire-and-forget), lalu
+   VERIFIKASI dengan GET yang memang lolos CORS. Yang dipercaya adalah isi Sheet. */
 function pushAll(){
   if(!cfg.url){ toast('URL Apps Script belum diisi (tab Setup)',true); return; }
   var pending=entries.filter(function(e){ return !e.synced; });
   if(!pending.length){ toast('Semua sudah tersinkron'); return; }
-  var parts=chunkArr(pending,150), i=0;
+
+  var cbm=[], inf=[];
+  pending.forEach(function(e){ if(isInfra(e)) inf.push(infraRow(e)); else cbm.push(e); });
+
+  var jobs=[];
+  chunkArr(cbm,150).forEach(function(part){ jobs.push({action:'append',      rows:part}); });
+  chunkArr(inf,150).forEach(function(part){ jobs.push({action:'appendInfra', rows:part}); });
+
+  var i=0;
   toast('Mengirim '+pending.length+' entry...');
   function sendNext(){
-    if(i>=parts.length){ setTimeout(verifySync,700); return; }
-    var body=JSON.stringify({action:'append', rows:parts[i]}); i++;
-    fetch(cfg.url,{
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:body
-    }).then(sendNext, sendNext);
+    if(i>=jobs.length){ setTimeout(verifySync,900); return; }
+    var body=JSON.stringify(jobs[i]); i++;
+    fetch(cfg.url,{ method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body:body }).then(sendNext, sendNext);
   }
   sendNext();
 }
 
-/* Tandai synced HANYA untuk entry yang id-nya benar-benar sudah ada di Sheet. */
+/* Tandai synced HANYA untuk id yang benar-benar sudah ada di salah satu sheet. */
 function verifySync(){
-  return fetch(cfg.url+'?action=list&t='+Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(!res || !res.ok) throw new Error('respons tidak dikenal');
-      var ids={}; (res.rows||[]).forEach(function(r){ ids[String(r.id)]=1; });
-      var ok=0;
-      entries.forEach(function(e){ if(!e.synced && ids[String(e.id)]){ e.synced=true; ok++; } });
-      lsSet(LS_ENTRIES,entries); renderAll();
-      var left=entries.filter(function(e){ return !e.synced; }).length;
-      if(left===0) toast('✓ '+ok+' entry terverifikasi di Sheets');
-      else toast('⚠ '+ok+' masuk, '+left+' belum — tekan Sync lagi',true);
-    })
-    .catch(function(err){
-      toast('Terkirim, tapi verifikasi gagal — cek internet lalu Sync lagi',true);
-      console.error(err);
-    });
+  var u=cfg.url, t=Date.now();
+  return Promise.all([
+    fetch(u+'?action=list&t='+t).then(function(r){ return r.json(); }),
+    fetch(u+'?action=listinfra&t='+t).then(function(r){ return r.json(); })
+      .catch(function(){ return {ok:true,rows:[]}; })
+  ]).then(function(res){
+    if(!res[0] || !res[0].ok) throw new Error('respons tidak dikenal');
+    var ids={};
+    (res[0].rows||[]).forEach(function(r){ ids[String(r.id)]=1; });
+    if(res[1] && res[1].rows) res[1].rows.forEach(function(r){ ids[String(r.id)]=1; });
+    var ok=0;
+    entries.forEach(function(e){ if(!e.synced && ids[String(e.id)]){ e.synced=true; ok++; } });
+    lsSet(LS_ENTRIES,entries); renderAll();
+    var left=entries.filter(function(e){ return !e.synced; }).length;
+    if(left===0) toast('✓ '+ok+' entry terverifikasi di Sheets');
+    else toast('⚠ '+ok+' masuk, '+left+' belum — tekan Sync lagi',true);
+  }).catch(function(err){
+    toast('Terkirim, tapi verifikasi gagal — cek internet lalu Sync lagi',true);
+    console.error(err);
+  });
 }
 
+var NUMF=['p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2'];
 function pullAll(){
   if(!cfg.url){ toast('URL Apps Script belum diisi',true); return; }
   toast('Menarik data tim...');
-  fetch(cfg.url+'?action=list&t='+Date.now()).then(function(r){ return r.json(); }).then(function(res){
-    if(!res || !res.ok){ toast('Gagal menarik data',true); return; }
+  var u=cfg.url, t=Date.now();
+  Promise.all([
+    fetch(u+'?action=list&t='+t).then(function(r){ return r.json(); }),
+    fetch(u+'?action=listinfra&t='+t).then(function(r){ return r.json(); })
+      .catch(function(){ return {ok:true,rows:[]}; })
+  ]).then(function(res){
+    if(!res[0] || !res[0].ok){ toast('Gagal menarik data',true); return; }
     var have={}; entries.forEach(function(e){ have[e.id]=1; });
     var added=0;
-    (res.rows||[]).forEach(function(r){
+    (res[0].rows||[]).forEach(function(r){
       if(have[r.id]) return;
-      r.synced=true;
-      ['p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2'].forEach(function(k){ r[k]=num(r[k]); });
-      entries.push(r); added++;
+      r.synced=true; NUMF.forEach(function(k){ r[k]=num(r[k]); });
+      if(!r.mode) r.mode='BIN';
+      entries.push(r); have[r.id]=1; added++;
+    });
+    ((res[1]&&res[1].rows)||[]).forEach(function(r){
+      if(have[r.id]) return;
+      var e={ id:r.id, ts:r.ts, tanggal:r.tanggal, jam:r.jam, pic:r.pic, wh:r.wh,
+              mode:'INFRA', zone:'', rack:r.rack, locator:r.locator,
+              tipe:r.jenis, isi:r.varian, p:num(r.p), l:num(r.l), t:num(r.t),
+              levels:num(r.levels), qty:num(r.qty), fill:0, note:r.note,
+              unitCbm:volM3(r.p,r.l,r.t), grossCbm:num(r.volM3), occCbm:0,
+              footM2:num(r.footM2), shelfM2:num(r.shelfM2), synced:true };
+      entries.push(e); have[r.id]=1; added++;
     });
     lsSet(LS_ENTRIES,entries); renderAll();
     toast(added? ('✓ '+added+' entry tim ditambahkan') : 'Tidak ada data baru');
   }).catch(function(err){ toast('Gagal menarik data',true); console.error(err); });
 }
 
+/* ============================================================
+   XLSX builder mini — ZIP stored + CRC32, sel inlineStr.
+   Sengaja TANPA library/CDN: app dipakai di gudang yang sinyalnya
+   tidak bisa diandalkan, dan SheetJS dari CDN akan gagal offline.
+   ============================================================ */
+var CRC_T=null;
+function crcTable(){
+  if(CRC_T) return CRC_T;
+  CRC_T=new Int32Array(256);
+  for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++){ c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); } CRC_T[n]=c; }
+  return CRC_T;
+}
+function crc32(u8){
+  var t=crcTable(), c=0^(-1);
+  for(var i=0;i<u8.length;i++) c=(c>>>8)^t[(c^u8[i])&0xFF];
+  return (c^(-1))>>>0;
+}
+function utf8b(s){
+  if(typeof TextEncoder!=='undefined') return new TextEncoder().encode(s);
+  var o=unescape(encodeURIComponent(s)), a=new Uint8Array(o.length);
+  for(var i=0;i<o.length;i++) a[i]=o.charCodeAt(i);
+  return a;
+}
+function zipStore(files){
+  function u16(v){ return [v&255,(v>>8)&255]; }
+  function u32(v){ return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255]; }
+  var parts=[], central=[], names=[], off=0;
+  for(var i=0;i<files.length;i++){
+    var nm=utf8b(files[i].name), data=files[i].data, crc=crc32(data);
+    var lh=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),
+                     u32(crc),u32(data.length),u32(data.length),u16(nm.length),u16(0));
+    parts.push(new Uint8Array(lh), nm, data);
+    central.push(new Uint8Array([].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+                 u32(crc),u32(data.length),u32(data.length),u16(nm.length),u16(0),u16(0),
+                 u16(0),u16(0),u32(0),u32(off))));
+    names.push(nm);
+    off += lh.length + nm.length + data.length;
+  }
+  var cdParts=[], cdLen=0;
+  for(var j=0;j<central.length;j++){
+    cdParts.push(central[j], names[j]); cdLen += central[j].length + names[j].length;
+  }
+  var eocd=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),
+            u16(files.length),u16(files.length),u32(cdLen),u32(off),u16(0)));
+  var all=parts.concat(cdParts,[eocd]), total=off+cdLen+eocd.length;
+  var out=new Uint8Array(total), pos=0;
+  for(var k=0;k<all.length;k++){ out.set(all[k],pos); pos+=all[k].length; }
+  return out;
+}
+function xmlEsc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c];
+  }).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+}
+function colName(n){ var s=''; while(n>0){ var m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=(n-1-m)/26; } return s; }
+function sheetXml(rows){
+  var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  for(var r=0;r<rows.length;r++){
+    x+='<row r="'+(r+1)+'">';
+    for(var c=0;c<rows[r].length;c++){
+      var v=rows[r][c], ref=colName(c+1)+(r+1);
+      if(v===null||v===undefined||v==='') continue;
+      if(typeof v==='number' && isFinite(v)) x+='<c r="'+ref+'"><v>'+v+'</v></c>';
+      else x+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(v)+'</t></is></c>';
+    }
+    x+='</row>';
+  }
+  return x+'</sheetData></worksheet>';
+}
+function buildXlsx(sheets){
+  var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>';
+  var wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'+
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+  var rel='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  var files=[];
+  for(var i=0;i<sheets.length;i++){
+    var n=i+1;
+    ct += '<Override PartName="/xl/worksheets/sheet'+n+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    wb += '<sheet name="'+xmlEsc(sheets[i].name)+'" sheetId="'+n+'" r:id="rId'+n+'"/>';
+    rel+= '<Relationship Id="rId'+n+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+n+'.xml"/>';
+    files.push({name:'xl/worksheets/sheet'+n+'.xml', data:utf8b(sheetXml(sheets[i].rows))});
+  }
+  ct += '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>';
+  wb += '</sheets></workbook>';
+  rel+= '</Relationships>';
+  var rootRel='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  return zipStore([
+    {name:'[Content_Types].xml', data:utf8b(ct)},
+    {name:'_rels/.rels',         data:utf8b(rootRel)},
+    {name:'xl/workbook.xml',     data:utf8b(wb)},
+    {name:'xl/_rels/workbook.xml.rels', data:utf8b(rel)}
+  ].concat(files));
+}
+
 /* ---------------- export ---------------- */
-var CSV_COLS=['ts','pic','wh','mode','zone','rack','locator','tipe','isi','p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm','footM2','shelfM2','note'];
-function exportCsv(){
-  var rows=[CSV_COLS.join(';')];
-  filtered().forEach(function(e){
-    rows.push(CSV_COLS.map(function(c){
-      var v=e[c]==null?'':e[c];
-      if(typeof v==='number') v=String(v).replace('.',',');
-      return '"'+String(v).replace(/"/g,'""')+'"';
-    }).join(';'));
+var XL_CBM=['tanggal','jam','pic','wh','mode','rak','locator','tipe','isi',
+            'p','l','t','qty','fill','unitCbm','grossCbm','occCbm','note','id'];
+var XL_INF=['tanggal','jam','pic','wh','jenis','varian','rak','locator',
+            'p','l','t','levels','qty','volM3','footM2','shelfM2','note','id'];
+
+function exportXlsx(){
+  var list=filtered(), cbm=[XL_CBM.slice()], inf=[XL_INF.slice()];
+  list.forEach(function(e){
+    if(isInfra(e)){
+      inf.push([e.tanggal||'', e.jam||'', e.pic, e.wh, infraJenis(e), infraVarian(e),
+                e.rack||e.zone||'', e.locator||'',
+                num(e.p),num(e.l),num(e.t),num(e.levels),num(e.qty),
+                num(e.grossCbm),num(e.footM2),num(e.shelfM2), e.note||'', e.id]);
+    } else {
+      cbm.push([e.tanggal||'', e.jam||'', e.pic, e.wh, e.mode, e.rack||e.zone||'', e.locator||'',
+                e.tipe, e.isi||'', num(e.p),num(e.l),num(e.t),num(e.qty),num(e.fill),
+                num(e.unitCbm),num(e.grossCbm),num(e.occCbm), e.note||'', e.id]);
+    }
   });
-  var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='CBM_'+(cfg.pic||'PMT').replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('CSV diunduh');
+  try{
+    var u8=buildXlsx([{name:'CBM',rows:cbm},{name:'INFRA',rows:inf}]);
+    var blob=new Blob([u8],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='CBM_'+(cfg.pic||'PMT').replace(/\s+/g,'_')+'_'+nowParts().tanggal+'.xlsx';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); },1500);
+    toast('XLSX diunduh · CBM '+(cbm.length-1)+' baris, INFRA '+(inf.length-1)+' baris');
+  }catch(err){
+    toast('Gagal membuat XLSX',true); console.error(err);
+  }
 }
 
 function shareWa(){
   var a=agg(entries);
   var t='*WAREHOUSE PMT - CBM CALCULATION*\n'+
    'PIC: '+(cfg.pic||'-')+(cfg.wh?' | '+cfg.wh:'')+'\n'+
-   'Tanggal: '+new Date().toLocaleDateString('id-ID')+'\n\n'+
+   'Tanggal: '+nowParts().tanggal+' '+nowParts().jam+'\n\n'+
    'CBM barang (occupied): *'+fmt(a.occ,2)+' m³*\n'+
    'CBM ruang terpakai (gross): '+fmt(a.gross,2)+' m³\n'+
-   'Utilisasi bin: '+(a.gross>0?Math.round(a.occ/a.gross*100)+'%':'-')+'\n'+
-   'CBM envelope rak: '+fmt(a.rakCbm,2)+' m³\n\n'+
+   'Utilisasi bin: '+(a.gross>0?Math.round(a.occ/a.gross*100)+'%':'-')+'\n\n'+
    'Bin: '+fmtInt(a.nBin)+'\nKarton / tumpukan: '+fmtInt(a.nKarton)+'\n'+
-   'Item No Package: '+fmtInt(a.nSlot)+'\nRak: '+fmtInt(a.nRak)+'\n'+
+   'Item No Package: '+fmtInt(a.nSlot)+'\n\n'+
+   '*INFRASTRUCTURE* (tidak masuk CBM)\n'+
+   'Rak: '+fmtInt(a.nRak)+'\nBin aset: '+fmtInt(a.nBinInfra)+'\n'+
+   'Total unit infra: '+fmtInt(a.nInfra)+'\n'+
    'Footprint rak: '+fmt(a.foot,1)+' m²\n\nTotal entry: '+fmtInt(entries.length);
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
 }
 
 function wipeLocal(){
   if(!confirm('Hapus SEMUA data entry di HP ini? Data yang sudah tersinkron tetap aman di Google Sheets.')) return;
-  entries=[]; lsSet(LS_ENTRIES,entries); renderAll(); toast('Data lokal dihapus');
-}
-
-/* ---------------- scanner bin locator ---------------- */
-var zxReader=null, scanActive=false, scanTimer=null, nativeDet=null, torchOn=false;
-
-function setScanMsg(m){ $('scanMsg').textContent=m; }
-
-function beep(){
-  try{
-    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
-    var ac=new C(), o=ac.createOscillator(), g=ac.createGain();
-    o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(ac.destination);
-    g.gain.setValueAtTime(.001,ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(.25,ac.currentTime+.01);
-    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.18);
-    o.start(); o.stop(ac.currentTime+.19);
-  }catch(e){}
-}
-
-function loadZX(){
-  return new Promise(function(res,rej){
-    if(window.ZXing) return res();
-    var el=document.createElement('script');
-    el.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
-    el.onload=function(){ res(); };
-    el.onerror=function(){ rej(new Error('load gagal')); };
-    document.head.appendChild(el);
-  });
-}
-
-function openScan(){
-  $('scanWrap').style.display='block';
-  scanActive=true; torchOn=false; $('torchBtn').textContent='🔆 Lampu';
-  setScanMsg('Menyiapkan kamera...');
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    setScanMsg('Browser ini tidak mendukung kamera. Tekan Isi Manual.'); return;
-  }
-  if('BarcodeDetector' in window){
-    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}})
-      .then(function(st){
-        if(!scanActive){ stopTracks(st); return; }
-        var v=$('scanVideo'); v.srcObject=st;
-        return v.play().then(function(){
-          try{ nativeDet=new window.BarcodeDetector(); }catch(e){ nativeDet=null; }
-          if(!nativeDet) return startZX();
-          setScanMsg('Arahkan kamera ke barcode / QR pada label bin.');
-          loopNative();
-        });
-      })
-      .catch(function(){ setScanMsg('Kamera tidak bisa diakses. Izinkan kamera di browser, atau tekan Isi Manual.'); });
-  } else {
-    startZX();
-  }
-}
-
-function loopNative(){
-  if(!scanActive || !nativeDet) return;
-  nativeDet.detect($('scanVideo')).then(function(codes){
-    if(!scanActive) return;
-    if(codes && codes.length && codes[0].rawValue){ gotCode(codes[0].rawValue); return; }
-    scanTimer=setTimeout(loopNative,220);
-  }).catch(function(){ if(scanActive) scanTimer=setTimeout(loopNative,400); });
-}
-
-function startZX(){
-  setScanMsg('Memuat pembaca barcode...');
-  return loadZX().then(function(){
-    if(!scanActive) return;
-    zxReader=new window.ZXing.BrowserMultiFormatReader();
-    setScanMsg('Arahkan kamera ke barcode / QR pada label bin.');
-    return zxReader.decodeFromConstraints(
-      {video:{facingMode:{ideal:'environment'}}}, 'scanVideo',
-      function(result){ if(result && result.getText && scanActive) gotCode(result.getText()); });
-  }).catch(function(){
-    setScanMsg('Pembaca barcode perlu internet sekali untuk dimuat. Sambungkan internet lalu buka Scan lagi, atau tekan Isi Manual.');
-  });
-}
-
-function gotCode(txt){
-  txt=String(txt).trim(); if(!txt) return;
-  beep();
-  if(navigator.vibrate){ try{ navigator.vibrate(60); }catch(e){} }
-  $('fLoc').value=txt;
-  closeScan();
-  toast('Locator: '+txt);
-  renderCalc();
-}
-
-function stopTracks(st){ try{ st.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} }
-
-function closeScan(focusManual){
-  scanActive=false; nativeDet=null;
-  clearTimeout(scanTimer);
-  try{ if(zxReader){ zxReader.reset(); zxReader=null; } }catch(e){}
-  var v=$('scanVideo');
-  if(v && v.srcObject){ stopTracks(v.srcObject); v.srcObject=null; }
-  $('scanWrap').style.display='none';
-  if(focusManual===true){ $('fLoc').focus(); }
-}
-
-function toggleTorch(){
-  var v=$('scanVideo'), st=v && v.srcObject;
-  if(!st){ setScanMsg('Kamera belum aktif.'); return; }
-  var tr=st.getVideoTracks()[0]; if(!tr) return;
-  var caps = tr.getCapabilities ? tr.getCapabilities() : null;
-  if(!caps || !('torch' in caps)){ setScanMsg('HP ini tidak mendukung lampu lewat browser.'); return; }
-  torchOn=!torchOn;
-  tr.applyConstraints({advanced:[{torch:torchOn}]})
-    .then(function(){ $('torchBtn').textContent = torchOn?'🔅 Matikan':'🔆 Lampu'; })
-    .catch(function(){ setScanMsg('Lampu gagal dinyalakan.'); });
+  entries=[]; state.editId=null; lsSet(LS_ENTRIES,entries); renderAll(); toast('Data lokal dihapus');
 }
 
 /* ---------------- boot ---------------- */
 (function init(){
   loadAll();
   $('cfgPic').value=cfg.pic; $('cfgWh').value=cfg.wh; $('cfgUrl').value=cfg.url;
-  $('fZone').value=cfg.lastZone||''; $('fRack').value=cfg.lastRack||'';
+  $('fRack').value=cfg.lastRack||cfg.lastZone||'';
   if(catalog.length) state.catId=catalog[0].id;
 
   var tabs=document.querySelectorAll('#modeTabs .mode');
@@ -1168,15 +1402,15 @@ function toggleTorch(){
       if(pg==='pgData') renderData();
     });
   }
-  ['fZone','fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','rP','rL','rT','rLv','fQty','fFill','sIsi','kIsi','rTipe']
+  ['fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','iP','iL','iT','iLv','iNama','fQty','fFill','sIsi','kIsi']
     .forEach(function(id){ var el=$(id); if(el){ el.addEventListener('input',renderCalc); el.addEventListener('change',renderCalc); } });
+  ['iJenis','iVarian'].forEach(function(id){ $(id).addEventListener('change',renderInfraForm); });
   $('fFill').addEventListener('input',renderFillChips);
-  ['dfMode','dfZone'].forEach(function(id){ $(id).addEventListener('input',renderData); $(id).addEventListener('change',renderData); });
+  ['dfMode','dfRack'].forEach(function(id){ $(id).addEventListener('input',renderData); $(id).addEventListener('change',renderData); });
   ['simGrow','simFill','simDens','simH','simAisle'].forEach(function(id){ $(id).addEventListener('input',function(){ renderSim(agg(entries)); }); });
 
   document.body.classList.add('inputpage');
 
-  /* tinggi nav -> variabel CSS, supaya action bar pas di atasnya */
   function setNavH(){
     var n=document.querySelector('nav');
     document.documentElement.style.setProperty('--navh', Math.round(n.getBoundingClientRect().height)+'px');
@@ -1206,7 +1440,7 @@ function toggleTorch(){
     else if(isSlim && y<40){ hdr.classList.remove('slim'); isSlim=false; }
   },{passive:true});
 
-  renderCatButtons(); renderFillChips(); renderCatEdit(); setMode('BIN'); renderAll();
+  renderCatButtons(); renderFillChips(); renderCatEdit(); renderInfraForm(); setMode('BIN'); renderAll();
 })();
 </script>
 </body>

@@ -90,7 +90,7 @@ Kalau muncul error script → ada baris `Code.gs` yang tidak ke-copy penuh.
    - `ASSESSMENT_GUDANG_DAN_METODOLOGI_CBM.md`
 
    Untuk `apps-script/Code.gs`: drag folder `apps-script` sekalian (GitHub menerima folder).
-8. Isi commit message: `Warehouse PMT - CBM Calculation v1.4`
+8. Isi commit message: `Warehouse PMT - CBM Calculation v1.5`
 9. **Commit changes**
 
 ---
@@ -143,16 +143,21 @@ Kalau langkah 5 sukses tapi Sheet kosong → Bapak buka Sheet yang berbeda dari 
 
 ---
 
-## STEP 5 — Kalibrasi Ukuran Bin (½ hari, WAJIB sebelum survey)
+## STEP 5 — Kalibrasi Ukuran Bin (✅ SUDAH SELESAI)
 
-1. Satu orang ukur fisik **dimensi dalam** (P × L × T, cm) untuk **Bin Kecil, Bin Sedang, Bin Besar**
-2. Update di **Setup → Katalog Ukuran Bin** → tekan **Tandai kalibrasi** tiap ukuran
-3. **Screenshot** katalog yang sudah terkalibrasi
-4. Sebar screenshot ke grup PMT — tiap anggota menyamakan angkanya di HP masing-masing
+Hasil ukur fisik 03 Sep 2026 sudah menjadi **default aplikasi** — tim tidak perlu mengetik ulang:
 
-> ⚠️ Katalog disimpan **per-HP dan tidak ikut sync**. Kalau angkanya beda antar HP, CBM-nya juga beda dan hasilnya tidak bisa digabung. Ini penyebab error nomor satu.
+| Kelas | Dimensi (cm) | Volume / unit |
+|---|---|---|
+| Bin Kecil (S) | 46 × 30 × 18 | 0,02484 m³ |
+| Bin Sedang (M) | 47 × 35 × 25 | 0,04113 m³ |
+| Bin Besar (L) | 60 × 42 × 37 | 0,09324 m³ |
+
+Ketiganya sudah bertanda **Terkalibrasi** (peringatan merah di layar input hilang).
+
+> ⚠️ **Jangan diubah tanpa koordinasi.** Katalog disimpan per-HP dan tidak ikut sync — kalau satu orang mengubah angkanya, hasilnya tidak bisa digabung dengan yang lain.
 >
-> Bin di luar 3 ukuran itu tidak perlu dikalibrasi — pakai **Bin Custom** dan ukur langsung di lapangan.
+> Bin yang ukurannya di luar ketiga kelas itu **jangan dipaksa masuk** — pakai tombol **Bin Custom** dan ukur langsung di tempat.
 
 ---
 
@@ -168,17 +173,28 @@ Kirim ke grup PMT (template siap kirim):
 >    `<URL Apps Script>`
 > 4. Tekan **Simpan Setelan**, pastikan badge kanan atas jadi **SYNCED**
 > 5. Samakan **Katalog Ukuran Bin** dengan screenshot terlampir
-> 6. Tekan **⬆ Sync ke Sheets** setiap selesai 1 zona — jangan tunggu sore
+> 6. Tekan **⬆ Sync ke Sheets** setiap selesai 1 rak / area — jangan tunggu sore
 >
-> Aturan: bin di rak = mode **BIN** · kaca/panel di sekat = **NO PACK** · box & tumpukan lantai = **KARTON** · rak = **RAK** (rak tidak menambah CBM barang).
+> Aturan: bin di rak = mode **BIN** · kaca/panel/basket di sekat = **NO PACK** · box & tumpukan lantai = **KARTON** · rak, bin kosong, lampu, meja = **INFRA** (tidak menambah CBM barang, masuk sheet `INFRA_DATA`).
 
-Urutan survey: **Tahap 1 mode RAK dulu** (cepat, langsung dapat kapasitas), baru **Tahap 2 sapu isi rak**, terakhir **Tahap 3 area lantai/FOC/Receiving**. Detail di `ASSESSMENT_GUDANG_DAN_METODOLOGI_CBM.md`.
+Urutan survey: **Tahap 1 mode INFRA dulu** (cepat, langsung dapat kapasitas & jumlah aset), baru **Tahap 2 sapu isi rak**, terakhir **Tahap 3 area lantai/FOC/Receiving**. Detail di `ASSESSMENT_GUDANG_DAN_METODOLOGI_CBM.md`.
 
 ---
 
 ## Update Aplikasi Setelah Live
 
 **Ubah `index.html`:** GitHub → klik file → ikon pensil ✏ → paste versi baru → Commit. Vercel deploy otomatis. Tim cukup **Ctrl+F5** / tutup-buka app.
+
+### Catatan teknis: kenapa sync tidak percaya respons POST
+Apps Script menjawab POST dengan redirect 302 ke `script.googleusercontent.com`, dan respons
+setelah redirect itu sering tidak membawa header CORS. Akibatnya **data berhasil tertulis di
+Sheet tetapi `fetch()` melempar error** — dulu ini membuat app menampilkan "Gagal sync"
+padahal sukses, dan entry tetap berstatus pending selamanya.
+
+Sejak v1.7 app mengirim POST secara *fire-and-forget* (`mode:'no-cors'`), lalu **memverifikasi
+lewat GET `?action=list`** dan menandai `synced` hanya untuk `id` yang benar-benar sudah ada di
+Sheet. Yang dipercaya adalah isi Sheet, bukan respons POST. Tekan Sync dua kali pun aman karena
+backend menolak `id` duplikat.
 
 **Ubah `Code.gs`:** Save saja **tidak cukup**. Wajib:
 **Deploy → Manage deployments → ikon pensil ✏ → Version: `New version` → Deploy**
@@ -194,6 +210,8 @@ URL tetap sama, tidak perlu ganti setting di HP tim.
 |---|---|
 | Badge tetap `OFFLINE` | URL Apps Script belum disimpan di tab Setup |
 | "Gagal sync — cek koneksi/URL" | Access bukan **Anyone**; atau URL tidak berakhiran `/exec`; atau app dibuka dari file lokal, bukan URL Vercel |
+| "⚠ x masuk, y belum" | Sebagian entry belum terbaca di Sheet. Tekan **⬆ Sync ke Sheets** sekali lagi — aman, backend menolak id yang sudah ada |
+| "Terkirim, tapi verifikasi gagal" | POST sudah dikirim tetapi app belum bisa membaca isi Sheet (internet putus di tengah). Sambungkan internet lalu Sync lagi |
 | Buka URL Apps Script malah minta login | Salah pilih access. Ulangi Deploy dengan **Anyone** |
 | Sync sukses tapi Sheet kosong | Apps Script terpasang di Sheet lain. Cek dari Sheet yang benar: Extensions → Apps Script |
 | Data tim tidak muncul | Tekan **⬇ Tarik data tim**; pastikan URL identik di semua HP |
@@ -202,7 +220,10 @@ URL tetap sama, tidak perlu ganti setting di HP tim.
 | CBM terasa terlalu kecil | Katalog belum dikalibrasi, atau area lantai/FOC belum disurvey pakai mode **KARTON** |
 | CBM terasa terlalu besar | Double-count: bin dihitung dua kali (BIN + KARTON), atau rak dihitung sebagai barang |
 | Bin ukurannya beda dari 3 standar | Pakai **Bin Custom** — ukur saat itu juga, tidak menambah katalog |
-| Data hilang setelah clear browser | Data lokal di localStorage. **Sync tiap selesai satu zona** |
+| Data hilang setelah clear browser | Data lokal di localStorage. **Sync tiap selesai satu rak / area** |
+| Tab `INFRA_DATA` belum muncul | Dibuat otomatis saat entry INFRA pertama disinkron |
+| Hasil Edit tidak berubah di Sheet | `Code.gs` v1.5 belum di-deploy ulang sebagai **New version** |
+| Kolom `jam` masih UTC di baris lama | Baris lama memang hanya punya `ts` (UTC). Baris baru pakai kolom `tanggal` + `jam` waktu lokal |
 
 ---
 
@@ -212,3 +233,38 @@ URL tetap sama, tidak perlu ganti setting di HP tim.
 - Isi sheet hanya dimensi, lokasi, dan nama PIC. Tidak ada data pribadi atau finansial.
 - Kalau URL bocor / ada data sampah masuk: Apps Script → **Deploy → Manage deployments → Archive**, buat deployment baru, sebar URL baru ke tim. Data lama di Sheet tetap aman.
 - Repo Public berarti kode aplikasi bisa dilihat publik — itu tidak apa-apa, karena **URL Apps Script tidak pernah ditulis di dalam kode**; tiap HP mengisinya sendiri di tab Setup. Jangan pernah hardcode URL itu ke `index.html` lalu di-push ke repo public.
+
+
+---
+
+## Update ke v1.5 (8 September 2026)
+
+Dua-duanya harus dilakukan, urutannya bebas.
+
+### 1. `Code.gs` — WAJIB deploy ulang
+1. Buka spreadsheet → **Extensions → Apps Script**.
+2. Ganti seluruh isi `Code.gs` dengan versi baru.
+3. **Deploy → Manage deployments → pensil ✏ → Version: `New version` → Deploy.**
+   Menekan **Save** saja tidak cukup — perubahan tidak akan aktif.
+
+Yang berubah: `doPost` jadi **upsert by id** (supaya tombol Edit benar-benar
+menimpa baris), tambah `action=appendInfra` / `action=listinfra` untuk sheet
+`INFRA_DATA`, dan tambah kolom `tanggal` + `jam` di akhir `COLS`.
+
+> Kolom baru ditambah di **akhir**, jadi 344 baris yang sudah ada tidak bergeser.
+> Header di baris 1 akan diperbaiki otomatis saat kiriman pertama masuk.
+> Tab `INFRA_DATA` dibuat otomatis saat entry INFRA pertama disinkron.
+
+### 2. `index.html` — upload ke GitHub
+1. Buka repo `warehouse-pmt-cbm-calculation` → **Add file → Upload files**.
+2. Drag `index.html`, `apps-script/Code.gs`, `README.md`, `DEPLOY_GUIDE.md`.
+3. Commit. Vercel deploy otomatis ±1 menit.
+
+### 3. Di HP tiap PIC
+**Hard refresh** (tutup app dari recent apps, buka lagi) supaya HTML baru terambil.
+Data entry di HP **tidak hilang** — kuncinya di localStorage tidak berubah.
+
+### Sebelum survey sungguhan
+Data uji lama masih ada di `CBM_DATA` (12 baris test, sebagian pakai dimensi
+bin sebelum kalibrasi). **Hapus baris-baris itu** dan tekan *Hapus semua data di
+HP ini* di kedua HP tes, supaya angka survey tidak tercampur.
