@@ -21,6 +21,11 @@
  *    lokal HP. Kolom 'ts' lama tetap ada (isinya UTC) supaya 344 baris yang
  *    sudah ada tidak bergeser. Kolom ts boleh di-hide di spreadsheet.
  *  · action appendInfra / listinfra untuk sheet INFRA_DATA.
+ *
+ * v1.6:
+ *  · Kolom 'tempat' (Rak / Pallete) ditambahkan di AKHIR COLS — khusus mode
+ *    KARTON, menandai barang itu di rak atau di atas pallet. Dipakai untuk
+ *    memisahkan kebutuhan rak vs floor space di proposal gudang baru.
  */
 
 var SHEET_NAME  = 'CBM_DATA';
@@ -29,7 +34,7 @@ var INFRA_SHEET = 'INFRA_DATA';
 /* Kolom baru SELALU ditambah di AKHIR array, supaya data lama tetap sejajar. */
 var COLS = ['id','ts','pic','wh','mode','zone','rack','tipe','isi',
             'p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm',
-            'footM2','shelfM2','note','locator','tanggal','jam'];
+            'footM2','shelfM2','note','locator','tanggal','jam','tempat'];
 
 var INFRA_COLS = ['id','ts','tanggal','jam','pic','wh','jenis','varian',
                   'rack','locator','p','l','t','levels','qty',
