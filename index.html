@@ -68,6 +68,8 @@ input[readonly]{background:#EFF2F6;color:var(--ink-2)}
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 /* ---------- chips ---------- */
 .chips{display:flex;flex-wrap:wrap;gap:7px}
+.chips.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.chips.g5 .chip{text-align:center;padding-left:0;padding-right:0}
 .chip{
   padding:9px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;
   font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;user-select:none;
@@ -280,8 +282,8 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
   <!-- NO PACKAGE -->
   <div class="card" id="boxSlot" style="display:none">
-    <h2>No Package — Dimensi Slot / Kompartemen (cm)</h2>
-    <p class="muted" style="margin-top:-4px">Untuk barang <b>tanpa kemasan</b> yang ditaruh langsung di rak: kaca, door panel, sheet metal, grill. Ukur <b>ruang sekatnya</b> (bukan per lembar), lalu isi % keterisian.</p>
+    <h2>No Package — Dimensi Barang (cm)</h2>
+    <p class="muted" style="margin-top:-4px">Untuk barang <b>tanpa kemasan</b> yang sekarang ditaruh langsung di rak: kaca, door panel, sheet metal, grill.<br>⚠ Ukur <b>tumpukan barangnya</b>, <b>bukan</b> ruang sekat/kompartemennya — tidak ada isian %, jadi ruang kosong di sekat akan ikut terhitung kalau salah ukur.<br>Barang di mode ini rencananya <b>akan dikarton</b> di gudang baru, jadi angkanya nanti ditambah faktor kemasan saat perencanaan.</p>
     <div class="grid3 fg">
       <div><label>Panjang</label><input id="sP" type="number" inputmode="decimal" placeholder="cm"></div>
       <div><label>Lebar</label><input id="sL" type="number" inputmode="decimal" placeholder="cm"></div>
@@ -294,12 +296,20 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
         <option>Chimney</option><option>Body</option><option>Lainnya</option>
       </select>
     </div>
+    <div class="fg mb0 mt10" id="sNamaWrap" style="display:none"><label>Sebutkan jenis barangnya</label>
+      <input id="sNama" placeholder="mis. rak kawat, evaporator, sheet metal">
+    </div>
   </div>
 
   <!-- KARTON -->
   <div class="card" id="boxKarton" style="display:none">
     <h2>Karton / Tumpukan — Dimensi (cm)</h2>
-    <p class="muted" style="margin-top:-4px">Box: ukur dimensi <b>luar</b> 1 box, lalu isi jumlah box identik.<br>Tumpukan lantai / pallet: ukur <b>alas × tinggi</b> tumpukan, qty = 1, lalu pakai % sebagai <b>kepadatan</b>.</p>
+    <p class="muted" style="margin-top:-4px"><b>Di Rak</b>: ukur dimensi <b>luar</b> 1 box, lalu isi jumlah box identik.<br><b>Di Pallete</b>: ukur <b>alas × tinggi</b> tumpukan apa adanya, qty = 1.<br>Tidak ada isian %, karena karton & tumpukan pindah <b>tanpa dibongkar</b> — ruang yang dipakai di gudang baru memang sebesar itu.</p>
+    <div class="fg"><label>Diletakkan di</label>
+      <select id="kTempat">
+        <option>Rak</option><option>Pallete</option>
+      </select>
+    </div>
     <div class="grid3 fg">
       <div><label>Panjang</label><input id="kP" type="number" inputmode="decimal" placeholder="cm"></div>
       <div><label>Lebar</label><input id="kL" type="number" inputmode="decimal" placeholder="cm"></div>
@@ -309,8 +319,11 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <select id="kIsi">
         <option>Glass Panel</option><option>Compressor</option><option>Gasket</option>
         <option>Door</option><option>Casing</option><option>Chimney</option>
-        <option>Body</option><option>Lainnya</option>
+        <option>Body</option><option>Regulator</option><option>Lainnya</option>
       </select>
+    </div>
+    <div class="fg mb0 mt10" id="kNamaWrap" style="display:none"><label>Sebutkan isinya</label>
+      <input id="kNama" placeholder="mis. material packing, barang FOC, unit appliance">
     </div>
   </div>
 
@@ -321,9 +334,12 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <div class="fg"><label>Jenis infrastructure</label>
       <select id="iJenis">
         <option>Rak</option><option>Bin</option><option>Lampu</option>
-        <option>Meja</option><option>Kursi</option><option>Trolley / Hand pallet</option>
-        <option>Tangga</option><option>Lemari / Locker</option>
-        <option>APAR</option><option>Kipas / Blower</option><option>Lainnya</option>
+        <option>Meja</option><option>Kursi</option><option>Lemari / Locker</option>
+        <option>Trolley / Hand pallet</option><option>Tangga</option>
+        <option>Timbangan</option><option>Printer</option><option>Laptop / PC</option>
+        <option>AC Portable</option><option>Panel Listrik</option><option>CCTV</option>
+        <option>Genset / UPS</option><option>APAR</option><option>Kipas / Blower</option>
+        <option>Lainnya</option>
       </select>
     </div>
     <div class="fg" id="iVarWrap"><label id="iVarLbl">Tipe rak</label>
@@ -356,7 +372,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     </div>
     <div id="fillWrap">
       <label id="fillLbl">Persentase isi</label>
-      <div class="chips" id="fillChips"></div>
+      <div class="chips g5" id="fillChips"></div>
       <div class="fg mt10 mb0"><input id="fFill" type="number" inputmode="decimal" value="100" placeholder="% custom"></div>
     </div>
     <div class="fg mt10 mb0"><label>Catatan (opsional)</label><input id="fNote" placeholder="mis. bin menonjol keluar, barang rusak"></div>
@@ -510,7 +526,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
   <div class="card">
     <h2>Tentang</h2>
-    <p class="small muted mb0">Warehouse PMT - CBM Calculation · v1.5<br>Parts Management — Customer Care Dept · MODENA<br>Survey kapasitas gudang spare parts sebelum relokasi.</p>
+    <p class="small muted mb0">Warehouse PMT - CBM Calculation · v1.6<br>Parts Management — Customer Care Dept · MODENA<br>Survey kapasitas gudang spare parts sebelum relokasi.</p>
   </div>
 </section>
 
@@ -568,20 +584,32 @@ var DEFAULT_CATALOG=[
  {id:'l', nama:'Bin Besar',  ket:'L', p:60, l:42, t:37, cal:true}
 ];
 var CUSTOM_ID='CUSTOM';
-var FILL_PRESETS=[0,10,25,50,75,90,100,110,125,150];
+/* 15 preset -> grid 5 kolom x 3 baris. 2 baris tidak muat: di layar 412px,
+   7-8 chip per baris menyisakan <47px per chip, teks "100%" terpotong. */
+var FILL_PRESETS=[0,10,20,25,30,50,60,75,80,90,100,110,120,125,150];
 
 /* Varian per jenis infrastructure. 'Bin' diisi dinamis dari katalog. */
+/* Varian rak dinamai berdasarkan ISI raknya, bukan tipe konstruksinya —
+   permintaan Pak Deva 9 Sep 2026. Ini justru lebih berguna untuk proposal
+   gudang baru: "Rak Compressor" langsung memetakan ke kelas heavy duty,
+   "Rak Glass Panel" ke rak sekat/cantilever, "Rak Bin" ke shelving. */
 var INFRA_VARIAN={
- 'Rak'                  :['Rak besi siku lubang (light duty)','Rak heavy duty / pallet racking',
-                          'Rak sekat kayu (glass area)','Rak louvre bin (bin miring)',
-                          'Rak kawat / mezzanine','Lainnya'],
+ 'Rak'                  :['Rak Bin','Rak Compressor','Rak Glass Panel','Rak Door',
+                          'Rak Gasket','Rak RAC','Rak Brava','Lainnya'],
  'Bin'                  :[],
  'Lampu'                :['Lampu LED','Lampu Neon / TL','Lampu sorot / Floodlight','Lainnya'],
  'Meja'                 :['Meja packing','Meja kerja / administrasi','Meja sortir','Lainnya'],
  'Kursi'                :['Kursi kerja','Kursi tinggi / bar','Lainnya'],
+ 'Lemari / Locker'      :['Lemari arsip','Locker karyawan','Lainnya'],
  'Trolley / Hand pallet':['Trolley barang','Hand pallet','Stacker manual','Lainnya'],
  'Tangga'               :['Tangga lipat','Tangga beroda / platform','Lainnya'],
- 'Lemari / Locker'      :['Lemari arsip','Locker karyawan','Lainnya'],
+ 'Timbangan'            :['Timbangan digital meja','Timbangan lantai','Lainnya'],
+ 'Printer'              :['Printer label / barcode','Printer dot matrix','Printer inkjet / laser','Lainnya'],
+ 'Laptop / PC'          :['Laptop','PC desktop','Monitor','Lainnya'],
+ 'AC Portable'          :['AC portable','AC split','AC standing','Lainnya'],
+ 'Panel Listrik'        :['Panel utama (MDP)','Panel distribusi (SDP)','Stop kontak industri','Lainnya'],
+ 'CCTV'                 :['Kamera indoor','Kamera outdoor','DVR / NVR','Lainnya'],
+ 'Genset / UPS'         :['Genset','UPS','Lainnya'],
  'APAR'                 :['APAR powder','APAR CO2','Hydrant box','Lainnya'],
  'Kipas / Blower'       :['Kipas dinding','Kipas berdiri','Blower / exhaust','Lainnya'],
  'Lainnya'              :[]
@@ -626,6 +654,22 @@ function nowParts(){
            jam:p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds()) };
 }
 
+/* Gabungkan pilihan 'Lainnya' dengan deskripsi yang diketik user.
+   Prefiks dipertahankan supaya di pivot masih bisa disaring "semua Lainnya",
+   sekaligus kelihatan isi sebenarnya. */
+function withDesc(pilihan, desc){
+  desc=(desc||'').trim();
+  if(pilihan!=='Lainnya') return pilihan;
+  return desc ? ('Lainnya — '+desc) : 'Lainnya';
+}
+
+function splitDesc(isi){
+  isi=String(isi||'');
+  var i=isi.indexOf('Lainnya — ');
+  if(i===0) return {pilihan:'Lainnya', desc:isi.slice(10)};
+  return {pilihan:isi, desc:''};
+}
+
 /* INFRA termasuk entry lama bermode 'RAK' supaya tidak mengotori CBM. */
 function isInfra(e){ return e.mode==='INFRA' || e.mode==='RAK'; }
 function infraJenis(e){ return (e.mode==='RAK')?'Rak':(e.tipe||'Lainnya'); }
@@ -644,7 +688,7 @@ function readForm(){
     id:uid(), ts:tp.iso, tanggal:tp.tanggal, jam:tp.jam,
     pic:cfg.pic||'-', wh:cfg.wh||'-',
     mode:m, zone:'', rack:($('fRack').value||'').trim(), locator:($('fLoc').value||'').trim(),
-    tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
+    tempat:'', tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
     unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false
   };
   if(m==='BIN'){
@@ -656,16 +700,26 @@ function readForm(){
       e.tipe=c.nama; e.p=c.p; e.l=c.l; e.t=c.t; e.isi='';
     }
   } else if(m==='NOPACK'){
-    e.tipe='No Package — '+$('sIsi').value; e.isi=$('sIsi').value;
+    e.isi=withDesc($('sIsi').value, $('sNama').value);
+    e.tipe='No Package — '+e.isi;
     e.p=num($('sP').value); e.l=num($('sL').value); e.t=num($('sT').value);
+    e.fill=100;   /* dimensi yang diukur = tumpukan barangnya, jadi pasti 100% */
   } else if(m==='KARTON'){
-    e.tipe='Karton / Tumpukan'; e.isi=$('kIsi').value;
+    e.tempat=$('kTempat').value;
+    e.isi=withDesc($('kIsi').value, $('kNama').value);
+    e.tipe='Karton — '+e.tempat;
     e.p=num($('kP').value); e.l=num($('kL').value); e.t=num($('kT').value);
+    /* Selalu 100%: karton & tumpukan pallet TIDAK dibongkar saat relokasi,
+       dipindah apa adanya. Jadi ruang yang dipakai di gudang baru memang
+       dimensi luarnya, bukan volume isi per karton. */
+    e.fill=100;
   } else if(m==='INFRA'){
     var j=$('iJenis').value, vr=$('iVarian').value||'';
     var isBin=(j==='Bin'), isCustomBin=(isBin && vr==='Bin Custom');
     e.tipe=j;
-    e.isi=(j==='Lainnya'||!infraVarianList(j).length) ? (($('iNama').value||'').trim()||'Lainnya') : vr;
+    e.isi=(j==='Lainnya'||!infraVarianList(j).length)
+            ? withDesc('Lainnya', $('iNama').value)
+            : withDesc(vr, $('iNama').value);
     if(isBin && !isCustomBin){
       var cb=catByName(vr); if(cb){ e.p=cb.p; e.l=cb.l; e.t=cb.t; }
     } else if(infraShowDim(j,vr)){
@@ -702,11 +756,32 @@ function renderCalc(){
     $('calcUnit').textContent='m³';
     $('calcLbl').textContent='occupied';
     $('calcMain').textContent=fmt(e.occCbm,4);
-    $('calcDetail').textContent=fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+
-      ' × '+fmt(e.fill,0)+'% · gross '+fmt(e.grossCbm,4);
+    $('calcDetail').textContent=(e.tempat? e.tempat+' · ':'')+
+      fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0)+' × '+fmtInt(e.qty)+
+      (showFill()? (' × '+fmt(e.fill,0)+'%'):'')+' · gross '+fmt(e.grossCbm,4);
   }
   var rk=($('fRack').value||'').trim(), lc=($('fLoc').value||'').trim();
   $('locChip').textContent=(rk||lc) ? (rk + (rk&&lc?' · ':'') + lc) : 'tanpa lokasi';
+}
+
+/* Kotak deskripsi hanya muncul saat 'Lainnya' dipilih. */
+function syncLainnya(){
+  var sw=$('sNamaWrap'), kw=$('kNamaWrap');
+  if(sw) sw.style.display = ($('sIsi').value==='Lainnya')? 'block':'none';
+  if(kw) kw.style.display = ($('kIsi').value==='Lainnya')? 'block':'none';
+}
+
+/* % isi HANYA untuk BIN — bin memang bisa terisi sebagian.
+   KARTON: tumpukan/box tidak dibongkar saat pindah, jadi ruang yang dipakai di
+   gudang baru = dimensi luarnya apa adanya. 100% flat itu benar.
+   NO PACK: yang diukur tumpukan barangnya langsung, bukan ruang sekat. */
+function showFill(){ return state.mode==='BIN'; }
+function syncFillWrap(){
+  var on=showFill();
+  $('fillWrap').style.display = on? 'block':'none';
+  if(!on) $('fFill').value=100;
+  $('fillLbl').textContent='Persentase isi';
+  $('qtyHead').textContent=(state.mode==='INFRA')?'Jumlah Unit':(on?'Jumlah & % Isi':'Jumlah');
 }
 
 function toggleLoc(){
@@ -742,7 +817,10 @@ function renderInfraForm(){
   var isBin=(j==='Bin'), isCustomBin=(isBin && sel.value==='Bin Custom');
   $('iDimWrap').style.display  = infraShowDim(j,sel.value)? 'block':'none';
   $('iLvWrap').style.display   = (j==='Rak')? 'block':'none';
-  $('iNamaWrap').style.display = (j==='Lainnya'||!list.length)? 'block':'none';
+  /* iNama dipakai untuk dua hal: jenis 'Lainnya', DAN varian 'Lainnya' */
+  $('iNamaWrap').style.display = (j==='Lainnya' || !list.length || sel.value==='Lainnya')? 'block':'none';
+  $('iNamaWrap').querySelector('label').textContent =
+    (j==='Lainnya'||!list.length) ? 'Sebutkan jenisnya' : 'Sebutkan tipe / peruntukannya';
 
   if(isBin && !isCustomBin){
     var c=catByName(sel.value);
@@ -767,7 +845,7 @@ function saveEntry(keep){
     if(needDim && e.unitCbm<=0){ toast('Dimensi '+e.tipe.toLowerCase()+' belum lengkap',true); return; }
   } else {
     if(e.unitCbm<=0){ toast('Dimensi belum lengkap',true); return; }
-    if(e.fill<=0){ toast('% isi harus > 0',true); return; }
+    if(showFill() && e.fill<=0){ toast('% isi harus > 0',true); return; }
   }
 
   if(state.editId){
@@ -788,7 +866,9 @@ function saveEntry(keep){
   }
 
   entries.push(e); lsSet(LS_ENTRIES,entries);
-  cfg.lastRack=e.rack; lsSet(LS_CFG,cfg);
+  cfg.lastRack=e.rack;
+  if(e.mode==='KARTON') cfg.lastTempat=e.tempat;   /* sekali pilih Pallete, terus Pallete */
+  lsSet(LS_CFG,cfg);
   toast('Tersimpan · '+(e.mode==='INFRA'? (fmtInt(e.qty)+' unit '+e.tipe) : (fmt(e.occCbm,4)+' m³')));
   if(!keep){ $('fNote').value=''; }
   $('fLoc').value='';
@@ -812,15 +892,20 @@ function editEntry(id){
     else { state.catId=CUSTOM_ID; $('cP').value=e.p; $('cL').value=e.l; $('cT').value=e.t; $('cNama').value=e.isi||''; }
     renderCatButtons();
   } else if(e.mode==='NOPACK'){
-    $('sIsi').value=e.isi||'Lainnya'; $('sP').value=e.p; $('sL').value=e.l; $('sT').value=e.t;
+    var sd=splitDesc(e.isi);
+    $('sIsi').value=sd.pilihan||'Lainnya'; $('sNama').value=sd.desc;
+    $('sP').value=e.p; $('sL').value=e.l; $('sT').value=e.t;
   } else if(e.mode==='KARTON'){
-    $('kIsi').value=e.isi||'Lainnya'; $('kP').value=e.p; $('kL').value=e.l; $('kT').value=e.t;
+    var kd=splitDesc(e.isi);
+    $('kIsi').value=kd.pilihan||'Lainnya'; $('kNama').value=kd.desc;
+    $('kTempat').value=e.tempat||'Rak';
+    $('kP').value=e.p; $('kL').value=e.l; $('kT').value=e.t;
   } else if(isInfra(e)){
     $('iJenis').value=infraJenis(e);
     renderInfraForm();
-    var vl=infraVarianList(infraJenis(e));
-    if(vl.indexOf(infraVarian(e))>=0) $('iVarian').value=infraVarian(e);
-    else { $('iNama').value=infraVarian(e); }
+    var id2=splitDesc(infraVarian(e)), vl=infraVarianList(infraJenis(e));
+    if(vl.indexOf(id2.pilihan)>=0){ $('iVarian').value=id2.pilihan; $('iNama').value=id2.desc; }
+    else { $('iVarian').value='Lainnya'; $('iNama').value=id2.desc||infraVarian(e); }
     $('iP').value=e.p; $('iL').value=e.l; $('iT').value=e.t; $('iLv').value=e.levels||5;
     renderInfraForm();
   }
@@ -830,7 +915,7 @@ function editEntry(id){
   $('editBanner').style.display='block';
   $('btnSave').textContent='UPDATE ENTRY';
   $('btnSaveNext').style.display='none';
-  renderFillChips(); renderCalc();
+  syncLainnya(); syncFillWrap(); renderFillChips(); renderCalc();
   window.scrollTo(0,0);
   toast('Entry dimuat — ubah lalu tekan UPDATE');
 }
@@ -938,7 +1023,9 @@ function renderRecent(){
                       : (e.tipe + (e.isi && e.isi!==e.tipe ? ' · '+e.isi : ''));
     if(e.unitCbm>0) tipeTxt += ' · '+fmt(e.p,0)+'×'+fmt(e.l,0)+'×'+fmt(e.t,0);
     var val = inf ? (fmtInt(e.qty)+' unit') : (fmt(e.occCbm,4)+' m³');
-    var meta = lokTxt(e)+' · '+fmtInt(e.qty)+'× · '+(inf?'—':fmt(e.fill,0)+'%');
+    var meta = lokTxt(e)+' · '+fmtInt(e.qty)+'× · '+
+               (inf ? '—' : (e.fill===100 ? '100%' : fmt(e.fill,0)+'%'))+
+               (e.tempat? ' · '+e.tempat : '');
     h+='<div style="border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-bottom:7px;background:#fff'+
        (state.editId===e.id?';border-color:var(--gold-500);box-shadow:0 0 0 2px rgba(197,160,72,.25)':'')+'">'+
        '<div style="display:flex;align-items:flex-start;gap:7px">'+
@@ -970,7 +1057,8 @@ function renderData(){
   $('dCount').textContent=fmtInt(list.length);
   for(var i=0;i<list.length;i++){
     var e=list[i], inf=isInfra(e), md=inf?'INFRA':e.mode;
-    var det = inf ? (infraJenis(e)+' · '+infraVarian(e)) : (e.tipe+(e.isi&&e.isi!==e.tipe?' · '+e.isi:''));
+    var det = inf ? (infraJenis(e)+' · '+infraVarian(e))
+                  : (e.tipe+(e.isi&&e.tipe.indexOf(e.isi)<0?' · '+e.isi:''));
     if(e.unitCbm>0) det += ' · '+e.p+'×'+e.l+'×'+e.t;
     h+='<tr><td><span class="dot '+(e.synced?'s':'u')+'"></span>'+(list.length-i)+'</td>'+
        '<td><span class="tag t-'+md+'">'+md+'</span></td>'+
@@ -1104,12 +1192,12 @@ function setMode(m){
   $('boxKarton').style.display = (m==='KARTON')?'block':'none';
   $('boxSlot').style.display   = (m==='NOPACK')?'block':'none';
   $('boxInfra').style.display  = (m==='INFRA')?'block':'none';
-  $('fillWrap').style.display  = (m==='INFRA')?'none':'block';
+  syncFillWrap();
   var lbl={BIN:'Jumlah bin identik (qty)',NOPACK:'Jumlah slot identik (qty)',
            KARTON:'Jumlah box identik (qty) — tumpukan isi 1',INFRA:'Jumlah unit identik (qty)'};
   $('qtyLbl').textContent=lbl[m];
-  $('fillLbl').textContent=(m==='KARTON')?'Persentase isi / kepadatan tumpukan':'Persentase isi';
-  $('qtyHead').textContent=(m==='INFRA')?'Jumlah Unit':'Jumlah & % Isi';
+  $('qtyHead').textContent=(m==='INFRA')?'Jumlah Unit':(showFill()?'Jumlah & % Isi':'Jumlah');
+  syncLainnya();
   if(m==='INFRA') renderInfraForm(); else renderCalc();
 }
 
@@ -1202,6 +1290,7 @@ function pullAll(){
       if(have[r.id]) return;
       r.synced=true; NUMF.forEach(function(k){ r[k]=num(r[k]); });
       if(!r.mode) r.mode='BIN';
+      r.tempat=r.tempat||'';
       entries.push(r); have[r.id]=1; added++;
     });
     ((res[1]&&res[1].rows)||[]).forEach(function(r){
@@ -1322,7 +1411,7 @@ function buildXlsx(sheets){
 }
 
 /* ---------------- export ---------------- */
-var XL_CBM=['tanggal','jam','pic','wh','mode','rak','locator','tipe','isi',
+var XL_CBM=['tanggal','jam','pic','wh','mode','rak','locator','tempat','tipe','isi',
             'p','l','t','qty','fill','unitCbm','grossCbm','occCbm','note','id'];
 var XL_INF=['tanggal','jam','pic','wh','jenis','varian','rak','locator',
             'p','l','t','levels','qty','volM3','footM2','shelfM2','note','id'];
@@ -1337,7 +1426,7 @@ function exportXlsx(){
                 num(e.grossCbm),num(e.footM2),num(e.shelfM2), e.note||'', e.id]);
     } else {
       cbm.push([e.tanggal||'', e.jam||'', e.pic, e.wh, e.mode, e.rack||e.zone||'', e.locator||'',
-                e.tipe, e.isi||'', num(e.p),num(e.l),num(e.t),num(e.qty),num(e.fill),
+                e.tempat||'', e.tipe, e.isi||'', num(e.p),num(e.l),num(e.t),num(e.qty),num(e.fill),
                 num(e.unitCbm),num(e.grossCbm),num(e.occCbm), e.note||'', e.id]);
     }
   });
@@ -1382,6 +1471,7 @@ function wipeLocal(){
   loadAll();
   $('cfgPic').value=cfg.pic; $('cfgWh').value=cfg.wh; $('cfgUrl').value=cfg.url;
   $('fRack').value=cfg.lastRack||cfg.lastZone||'';
+  $('kTempat').value=cfg.lastTempat||'Rak';
   if(catalog.length) state.catId=catalog[0].id;
 
   var tabs=document.querySelectorAll('#modeTabs .mode');
@@ -1402,8 +1492,13 @@ function wipeLocal(){
       if(pg==='pgData') renderData();
     });
   }
-  ['fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','iP','iL','iT','iLv','iNama','fQty','fFill','sIsi','kIsi']
+  ['fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','iP','iL','iT','iLv',
+   'iNama','sNama','kNama','fQty','fFill']
     .forEach(function(id){ var el=$(id); if(el){ el.addEventListener('input',renderCalc); el.addEventListener('change',renderCalc); } });
+  ['sIsi','kIsi'].forEach(function(id){
+    $(id).addEventListener('change',function(){ syncLainnya(); renderCalc(); });
+  });
+  $('kTempat').addEventListener('change',renderCalc);
   ['iJenis','iVarian'].forEach(function(id){ $(id).addEventListener('change',renderInfraForm); });
   $('fFill').addEventListener('input',renderFillChips);
   ['dfMode','dfRack'].forEach(function(id){ $(id).addEventListener('input',renderData); $(id).addEventListener('change',renderData); });
@@ -1440,7 +1535,8 @@ function wipeLocal(){
     else if(isSlim && y<40){ hdr.classList.remove('slim'); isSlim=false; }
   },{passive:true});
 
-  renderCatButtons(); renderFillChips(); renderCatEdit(); renderInfraForm(); setMode('BIN'); renderAll();
+  renderCatButtons(); renderFillChips(); renderCatEdit(); renderInfraForm();
+  syncLainnya(); setMode('BIN'); renderAll();
 })();
 </script>
 </body>
