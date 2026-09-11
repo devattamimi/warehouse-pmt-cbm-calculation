@@ -258,6 +258,21 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <div><label>Bin Locator <span style="font-weight:600;text-transform:none;color:var(--ink-3)">— opsional</span></label><input id="fLoc" placeholder="mis. A-6-5-2"></div>
     </div>
     <datalist id="rackList"></datalist>
+    <div class="fg mb0 mt10">
+      <label class="btn btn-ghost btn-sm" style="width:100%;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">&#128247; Foto Bin Locator
+        <input id="fFotoLoc" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoLoc(this)">
+      </label>
+      <div class="sm" id="fotoLocInfo" style="margin-top:6px;color:var(--ink-3)">Foto label bin kalau kodenya susah diketik.</div>
+    </div>
+    <div class="fg mb0 mt10"><label>Item Code <span style="font-weight:600;text-transform:none;color:var(--ink-3)">&mdash; ketik atau foto</span></label>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <input id="fItemCode" placeholder="ketik kalau terbaca jelas" style="flex:1">
+        <label class="btn btn-ghost btn-sm" style="flex:0 0 92px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#128247; Foto
+          <input id="fFoto" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFoto(this)">
+        </label>
+      </div>
+      <div class="sm" id="fotoInfo" style="margin-top:6px;color:var(--ink-3)">Kalau kode tidak terbaca, cukup foto. Kode dibaca belakangan dari ZIP foto.</div>
+    </div>
     <p class="muted mt10 mb0"><b>Rak</b> tetap tersimpan setelah Simpan, jadi tidak perlu diketik ulang tiap entry.<br><b>Bin Locator</b> dikosongkan otomatis tiap Simpan, karena unik per bin.</p>
     </div>
   </div>
@@ -299,6 +314,30 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <div class="fg mb0 mt10" id="sNamaWrap" style="display:none"><label>Sebutkan jenis barangnya</label>
       <input id="sNama" placeholder="mis. rak kawat, evaporator, sheet metal">
     </div>
+
+    <div id="sBinWrap" style="display:none;margin-top:14px;border-top:1px solid #E3E7EC;padding-top:12px">
+      <div class="fg"><label>Berat per pcs (kg) <span style="font-weight:600;text-transform:none;color:var(--ink-3)">&mdash; opsional</span></label>
+        <input id="sBerat" type="number" inputmode="decimal" placeholder="kosongkan kalau tidak ditimbang"></div>
+      <div class="warnbox" id="sFitBox" style="background:#EAF4EC;border-color:#9BC4A6">
+        <b id="sFitTxt">Isi dimensi barang dulu</b>
+        <div class="sm" id="sFitDetail" style="margin-top:4px">&mdash;</div>
+      </div>
+      <div class="fg mb0"><label>Keputusan bin</label>
+        <select id="sBinPilih">
+          <option value="AUTO">Ikut sistem (rekomendasi)</option>
+          <option value="Bin Sedang">Paksa: Bin Sedang</option>
+          <option value="Bin Besar">Paksa: Bin Besar</option>
+          <option value="TIDAK">Tidak masuk bin</option>
+        </select>
+      </div>
+      <div class="fg mb0 mt10" id="sAlasanWrap" style="display:none"><label>Alasan tidak masuk bin</label>
+        <select id="sAlasan">
+          <option>Terlalu besar</option><option>Terlalu berat</option>
+          <option>Mudah pecah</option><option>Harus tetap di karton asli</option>
+          <option>Butuh akses cepat</option><option>Lainnya</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- KARTON -->
@@ -333,7 +372,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     <p class="muted" style="margin-top:-4px">Hitung <b>aset gudang</b>: rak, bin kosong, lampu, meja, dll. Mode ini <b>tidak masuk hitungan CBM barang</b> dan disimpan di sheet Google Sheets <b>terpisah</b>.</p>
     <div class="fg"><label>Jenis infrastructure</label>
       <select id="iJenis">
-        <option>Rak</option><option>Bin</option><option>Lampu</option>
+        <option>Rak</option><option>Space / Area</option><option>Bin</option><option>Lampu</option>
         <option>Meja</option><option>Kursi</option><option>Lemari / Locker</option>
         <option>Trolley / Hand pallet</option><option>Tangga</option>
         <option>Timbangan</option><option>Printer</option><option>Laptop / PC</option>
@@ -409,6 +448,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
     </div>
     <div class="btnrow">
       <button class="btn btn-ghost btn-sm" onclick="exportXlsx()">⬇ XLSX</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportFoto()">📷 ZIP Foto</button>
       <button class="btn btn-ghost btn-sm" onclick="shareWa()">💬 WhatsApp</button>
     </div>
     <div class="divline"></div>
@@ -433,6 +473,9 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <div class="stat"><div class="v" id="kBin">0</div><div class="k">Bin</div></div>
       <div class="stat"><div class="v" id="kKarton">0</div><div class="k">Karton / Tumpukan</div></div>
       <div class="stat"><div class="v" id="kSlot">0</div><div class="k">Item No Package</div></div>
+      <div class="stat accent"><div class="v" id="kBinNeedS">0</div><div class="k">Bin Sedang dibutuhkan</div></div>
+      <div class="stat accent"><div class="v" id="kBinNeedL">0</div><div class="k">Bin Besar dibutuhkan</div></div>
+      <div class="stat"><div class="v" id="kNoBin">0</div><div class="k">CBM tidak muat bin</div></div>
     </div>
   </div>
 
@@ -459,6 +502,7 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
       <div class="stat"><div class="v" id="kBinInfra">0</div><div class="k">Bin (aset)</div></div>
       <div class="stat"><div class="v" id="kFoot">0</div><div class="k">Footprint Rak (m²)</div></div>
       <div class="stat"><div class="v" id="kShelf">0</div><div class="k">Luas Shelf (m²)</div></div>
+      <div class="stat accent"><div class="v" id="kArea">0</div><div class="k">Luas Area / Ruangan (m²)</div></div>
     </div>
     <div class="tblwrap"><table><thead><tr><th>Jenis</th><th>Varian</th><th class="num">Qty</th><th>Dimensi</th></tr></thead><tbody id="infraBody"></tbody></table></div>
   </div>
@@ -555,7 +599,23 @@ details summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy
 
 <script>
 /* ============================================================
-   PMT CBM COUNTER — MODENA Parts Management            v1.5
+   PMT CBM COUNTER — MODENA Parts Management            v1.7
+
+   Perubahan v1.7 (11 Sep 2026):
+   · NOPACK selain Glass Panel: sistem menentukan sendiri barang muat
+     Bin Sedang / Bin Besar / tidak muat, dari dimensi yang sudah diukur.
+     Surveyor tidak menilai — hanya override kalau sistem keliru.
+     Ditambah berat per pcs (batas 10 kg Bin Sedang / 20 kg Bin Besar),
+     pcs per bin, dan jumlah bin yang dibutuhkan.
+   · INFRA jenis baru 'Space / Area': pilih nama area (Ruang PCB, FM Area,
+     SM Area, Brava, Compressor, Void, Material RAC, Outbound, Receiving,
+     Parts Lebihan, Unit Z), isi P x L saja -> luas m2. Tinggi disembunyikan.
+   · Item Code: boleh diketik atau difoto. Foto dikompres ke max 1400px /
+     JPEG 62% dan disimpan di IndexedDB HP — TIDAK ikut sync ke Sheets.
+     Tombol 'ZIP Foto' di tab Data mengunduh semua foto dengan nama
+     tanggal_jam_rak_locator_id.jpg untuk dibaca belakangan.
+   · Ringkasan: Bin Sedang dibutuhkan, Bin Besar dibutuhkan, CBM tidak muat
+     bin, dan Luas Area / Ruangan.
    Single-file. Offline-first (localStorage) + Google Sheets sync.
 
    Perubahan v1.5:
@@ -596,6 +656,9 @@ var FILL_PRESETS=[0,10,20,25,30,50,60,75,80,90,100,110,120,125,150];
 var INFRA_VARIAN={
  'Rak'                  :['Rak Bin','Rak Compressor','Rak Glass Panel','Rak Door',
                           'Rak Gasket','Rak RAC','Rak Brava','Lainnya'],
+ 'Space / Area'         :['Ruang PCB','FM Area','SM Area','Brava','Compressor Area',
+                          'Void Area (sebelah Receiving)','Material RAC Area','Outbound Area',
+                          'Receiving Area','Parts Lebihan Area','Unit Z Area','Lainnya'],
  'Bin'                  :[],
  'Lampu'                :['Lampu LED','Lampu Neon / TL','Lampu sorot / Floodlight','Lainnya'],
  'Meja'                 :['Meja packing','Meja kerja / administrasi','Meja sortir','Lainnya'],
@@ -615,7 +678,41 @@ var INFRA_VARIAN={
  'Lainnya'              :[]
 };
 /* Jenis yang WAJIB punya dimensi */
-var INFRA_NEED_DIM={'Rak':1,'Meja':1,'Lemari / Locker':1};
+var INFRA_NEED_DIM={'Rak':1,'Meja':1,'Lemari / Locker':1,'Space / Area':1};
+function isSpace(j){ return j==='Space / Area'; }
+
+/* ---- Bin fit untuk barang NON-PACK -----------------------------------
+   Ukuran DALAM bin (cm) = ukuran luar dikurangi tebal dinding & taper.
+   ESTIMASI — ganti kalau tim sudah mengukur bagian dalam bin.
+   maxKg = batas aman bin plastik, bukan batas beban rak. */
+var BIN_FIT=[
+ {nama:'Bin Sedang', p:45, l:33, t:22, maxKg:10},
+ {nama:'Bin Besar',  p:57, l:39, t:34, maxKg:20}
+];
+var BIN_PACK_EFF=0.80;   /* isi realistis per bin, sama dengan fill factor lapangan */
+
+function sortDesc3(a,b,c){ var v=[num(a),num(b),num(c)]; v.sort(function(x,y){return y-x;}); return v; }
+function fitsIn(p,l,t,spec){
+  if(!spec) return false;
+  var v=sortDesc3(p,l,t), w=sortDesc3(spec.p,spec.l,spec.t);
+  return v[2]>0 && v[0]<=w[0] && v[1]<=w[1] && v[2]<=w[2];
+}
+function binFitOf(p,l,t){
+  for(var i=0;i<BIN_FIT.length;i++) if(fitsIn(p,l,t,BIN_FIT[i])) return BIN_FIT[i];
+  return null;
+}
+function binSpecByName(nm){ for(var i=0;i<BIN_FIT.length;i++) if(BIN_FIT[i].nama===nm) return BIN_FIT[i]; return null; }
+function binPerBin(spec,p,l,t,kg){
+  if(!spec) return 0;
+  var iv=volM3(p,l,t), bv=volM3(spec.p,spec.l,spec.t);
+  if(iv<=0) return 0;
+  var n=Math.floor(bv*BIN_PACK_EFF/iv);
+  /* 1 pcs yang mengisi hampir penuh bin tetap dihitung 1 per bin,
+     bukan 0 — aturan 80% berlaku untuk barang kecil yang ditumpuk. */
+  if(n<1 && fitsIn(p,l,t,spec)) n=1;
+  if(kg>0) n=Math.min(n, Math.floor(spec.maxKg/kg));
+  return Math.max(0,n);
+}
 
 var state={mode:'BIN', catId:'c1', fill:100, editId:null};
 var entries=[], cfg={pic:'',wh:'',url:''}, catalog=[];
@@ -689,7 +786,10 @@ function readForm(){
     pic:cfg.pic||'-', wh:cfg.wh||'-',
     mode:m, zone:'', rack:($('fRack').value||'').trim(), locator:($('fLoc').value||'').trim(),
     tempat:'', tipe:'', p:0,l:0,t:0, levels:0, qty:qty, fill:fill, isi:'', note:($('fNote').value||'').trim(),
-    unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false
+    unitCbm:0, grossCbm:0, occCbm:0, footM2:0, shelfM2:0, synced:false,
+    itemCode:($('fItemCode').value||'').trim(),
+    binFit:'', binPilih:'', binFinal:'', alasanNoBin:'', beratKg:0,
+    qtyPerBin:0, binNeed:0, hasFoto:0, hasFotoLoc:0
   };
   if(m==='BIN'){
     if(state.catId===CUSTOM_ID){
@@ -704,6 +804,20 @@ function readForm(){
     e.tipe='No Package — '+e.isi;
     e.p=num($('sP').value); e.l=num($('sL').value); e.t=num($('sT').value);
     e.fill=100;   /* dimensi yang diukur = tumpukan barangnya, jadi pasti 100% */
+    if($('sIsi').value!=='Glass Panel'){
+      e.beratKg=num($('sBerat').value);
+      var autoB=binFitOf(e.p,e.l,e.t);
+      e.binFit=autoB?autoB.nama:'Tidak muat';
+      var pil=$('sBinPilih').value; e.binPilih=pil;
+      if(pil==='TIDAK'){ e.binFinal='Tidak masuk bin'; e.alasanNoBin=$('sAlasan').value; }
+      else if(pil==='AUTO'){ e.binFinal=autoB?autoB.nama:'Tidak masuk bin'; e.alasanNoBin=autoB?'':'Terlalu besar'; }
+      else { e.binFinal=pil; e.alasanNoBin=''; }
+      var spB=binSpecByName(e.binFinal);
+      e.qtyPerBin=binPerBin(spB,e.p,e.l,e.t,e.beratKg);
+      e.binNeed=(e.qtyPerBin>0)? Math.ceil(qty/e.qtyPerBin) : 0;
+    } else {
+      e.binFit='Kaca - rak khusus'; e.binFinal='Tidak masuk bin'; e.alasanNoBin='Kaca';
+    }
   } else if(m==='KARTON'){
     e.tempat=$('kTempat').value;
     e.isi=withDesc($('kIsi').value, $('kNama').value);
@@ -722,6 +836,8 @@ function readForm(){
             : withDesc(vr, $('iNama').value);
     if(isBin && !isCustomBin){
       var cb=catByName(vr); if(cb){ e.p=cb.p; e.l=cb.l; e.t=cb.t; }
+    } else if(isSpace(j)){
+      e.p=num($('iP').value); e.l=num($('iL').value); e.t=0;   /* area: P x L saja */
     } else if(infraShowDim(j,vr)){
       e.p=num($('iP').value); e.l=num($('iL').value); e.t=num($('iT').value);
     } /* jenis tanpa dimensi (Lampu, APAR, ...) tetap 0 — jangan bawa sisa input */
@@ -735,6 +851,9 @@ function readForm(){
     if(e.tipe==='Rak'){
       e.footM2  = (e.p*e.l/10000)*e.qty;
       e.shelfM2 = (e.p*e.l/10000)*e.levels*e.qty;
+    } else if(isSpace(e.tipe)){
+      e.footM2  = (e.p*e.l/10000)*e.qty;   /* luas area / ruangan */
+      e.shelfM2 = 0; e.grossCbm = 0;
     }
   } else {
     e.grossCbm = e.unitCbm*e.qty;
@@ -744,6 +863,7 @@ function readForm(){
 }
 
 function renderCalc(){
+  renderBinFit();
   var e=readForm(), inf=(e.mode==='INFRA');
   if(inf){
     $('calcUnit').textContent='unit';
@@ -768,6 +888,7 @@ function renderCalc(){
 function syncLainnya(){
   var sw=$('sNamaWrap'), kw=$('kNamaWrap');
   if(sw) sw.style.display = ($('sIsi').value==='Lainnya')? 'block':'none';
+  renderBinFit();
   if(kw) kw.style.display = ($('kIsi').value==='Lainnya')? 'block':'none';
 }
 
@@ -803,7 +924,7 @@ function infraVarianList(j){
    Wajib dipakai juga di readForm: tanpa ini, dimensi sisa dari jenis
    sebelumnya ikut tersimpan — mis. Lampu terbawa 47x35x25 dari Bin. */
 function infraShowDim(j,vr){
-  return !!INFRA_NEED_DIM[j] || (j==='Bin' && vr==='Bin Custom')
+  return isSpace(j) || !!INFRA_NEED_DIM[j] || (j==='Bin' && vr==='Bin Custom')
          || j==='Lainnya' || !infraVarianList(j).length;
 }
 function renderInfraForm(){
@@ -812,11 +933,16 @@ function renderInfraForm(){
   sel.innerHTML=h;
   if(list.indexOf(cur)>=0) sel.value=cur;
   $('iVarWrap').style.display = list.length? 'block':'none';
-  $('iVarLbl').textContent = (j==='Bin')?'Ukuran bin':(j==='Rak')?'Tipe rak':'Tipe / varian';
+  $('iVarLbl').textContent = (j==='Bin')?'Ukuran bin':(j==='Rak')?'Tipe rak':isSpace(j)?'Nama area / ruangan':'Tipe / varian';
 
   var isBin=(j==='Bin'), isCustomBin=(isBin && sel.value==='Bin Custom');
   $('iDimWrap').style.display  = infraShowDim(j,sel.value)? 'block':'none';
   $('iLvWrap').style.display   = (j==='Rak')? 'block':'none';
+  /* Area/ruangan diukur P x L saja - tinggi tidak relevan untuk luas lantai */
+  $('iT').parentNode.style.display = isSpace(j)? 'none':'block';
+  if(isSpace(j)) $('iT').value='';
+  $('iP').parentNode.getElementsByTagName('label')[0].textContent = isSpace(j)?'Panjang area':'Panjang';
+  $('iL').parentNode.getElementsByTagName('label')[0].textContent = isSpace(j)?'Lebar area':'Lebar';
   /* iNama dipakai untuk dua hal: jenis 'Lainnya', DAN varian 'Lainnya' */
   $('iNamaWrap').style.display = (j==='Lainnya' || !list.length || sel.value==='Lainnya')? 'block':'none';
   $('iNamaWrap').querySelector('label').textContent =
@@ -830,10 +956,157 @@ function renderInfraForm(){
     'Rak'  :'Ukur 1 rak yang mewakili, lalu isi jumlah rak identik di bawah. Level dipakai untuk hitung luas shelf.',
     'Bin'  :'Pilih ukuran bin — dimensi otomatis dari katalog. Ukuran tak standar pakai Bin Custom.',
     'Lampu':'Cukup pilih jenis lampu, lalu isi jumlahnya. Tidak perlu dimensi.',
-    'Meja' :'Ukur meja, lalu isi jumlah meja identik.'
+    'Meja' :'Ukur meja, lalu isi jumlah meja identik.',
+    'Space / Area':'Pilih nama area, lalu isi panjang x lebar dalam CM. Luas otomatis jadi m2. Qty = jumlah area identik, biasanya 1.'
   };
   $('iHint').textContent = hint[j] || 'Isi jumlah unit. Dimensi opsional — kosongkan kalau tidak relevan.';
   renderCalc();
+}
+
+/* ---------------- bin fit panel (NOPACK) ---------------- */
+function renderBinFit(){
+  var w=$('sBinWrap'); if(!w) return;
+  var show=(state.mode==='NOPACK' && $('sIsi').value!=='Glass Panel');
+  w.style.display=show?'block':'none';
+  if(!show) return;
+  var p=num($('sP').value), l=num($('sL').value), t=num($('sT').value), kg=num($('sBerat').value);
+  var autoB=binFitOf(p,l,t), pil=$('sBinPilih').value;
+  $('sAlasanWrap').style.display=(pil==='TIDAK')?'block':'none';
+  var fin=(pil==='TIDAK')?'Tidak masuk bin':(pil==='AUTO'?(autoB?autoB.nama:'Tidak masuk bin'):pil);
+  var sp=binSpecByName(fin), per=binPerBin(sp,p,l,t,kg);
+  var qty=Math.max(0,num($('fQty').value)), need=(per>0)?Math.ceil(qty/per):0;
+  var box=$('sFitBox');
+  function paint(bg,bd){ box.style.background=bg; box.style.borderColor=bd; }
+  if(p<=0||l<=0||t<=0){
+    paint('#F2F4F7','#D9DEE5');
+    $('sFitTxt').textContent='Isi dimensi barang dulu';
+    $('sFitDetail').textContent='Sistem menentukan sendiri muat Bin Sedang atau Bin Besar.';
+  } else if(fin==='Tidak masuk bin'){
+    paint('#FBEAE9','#E8BEBC');
+    $('sFitTxt').textContent='✕ Tidak masuk bin';
+    $('sFitDetail').textContent=(pil==='TIDAK')
+      ? ('Ditandai manual · '+$('sAlasan').value)
+      : ('Barang '+fmt(p,0)+'×'+fmt(l,0)+'×'+fmt(t,0)+' cm melebihi Bin Besar (dalam 57×39×34 cm)');
+  } else if(sp && !fitsIn(p,l,t,sp)){
+    paint('#FFF6E0','#E8CE8A');
+    $('sFitTxt').textContent='⚠ Dipaksa '+fin+' — barang lebih besar dari bin';
+    $('sFitDetail').textContent='Sistem menghitung barang ini tidak muat. Pastikan benar sebelum disimpan.';
+  } else {
+    paint('#EAF4EC','#9BC4A6');
+    $('sFitTxt').textContent='✔ Muat '+fin+(pil==='AUTO'?'':' (dipilih manual)');
+    $('sFitDetail').textContent = per>0
+      ? (fmtInt(per)+' pcs per bin → butuh '+fmtInt(need)+' bin untuk '+fmtInt(qty)+' pcs'
+         + (kg>0 ? (' · dibatasi berat '+fmtInt(sp.maxKg)+' kg/bin') : ' · berat belum diisi'))
+      : (kg>0 && sp && kg>sp.maxKg)
+        ? ('Berat '+fmt(kg,1)+' kg melebihi batas '+fmtInt(sp.maxKg)+' kg per bin \u2014 pilih "Tidak masuk bin".')
+        : 'Volume per pcs terlalu besar untuk dihitung per bin.';
+  }
+}
+
+/* ---------------- foto item code (IndexedDB, TIDAK ikut sync) ---------------- */
+var IDB_NAME='pmt_cbm_foto', IDB_STORE='foto', _idb=null, pendingFoto=null, pendingFotoLoc=null;
+function idb(cb){
+  if(_idb){ cb(_idb); return; }
+  try{
+    var rq=indexedDB.open(IDB_NAME,1);
+    rq.onupgradeneeded=function(){ rq.result.createObjectStore(IDB_STORE); };
+    rq.onsuccess=function(){ _idb=rq.result; cb(_idb); };
+    rq.onerror=function(){ cb(null); };
+  }catch(err){ cb(null); }
+}
+function fotoPut(id,blob,cb){
+  idb(function(db){ if(!db){ if(cb) cb(false); return; }
+    try{
+      var tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(blob,id);
+      tx.oncomplete=function(){ if(cb) cb(true); };
+      tx.onerror=function(){ if(cb) cb(false); };
+    }catch(err){ if(cb) cb(false); }
+  });
+}
+function fotoDel(id){
+  idb(function(db){ if(!db) return;
+    try{ db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE)['delete'](id); }catch(err){}
+  });
+}
+function fotoAll(cb){
+  idb(function(db){ if(!db){ cb({}); return; }
+    var out={};
+    try{
+      var rq=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).openCursor();
+      rq.onsuccess=function(){ var c=rq.result; if(c){ out[c.key]=c.value; c['continue'](); } else cb(out); };
+      rq.onerror=function(){ cb(out); };
+    }catch(err){ cb(out); }
+  });
+}
+/* maxPx & mutu dipisah: label bin cuma teks pendek, tidak perlu setajam item code */
+function shrinkFoto(file, maxPx, mutu, cb){
+  var url=URL.createObjectURL(file), img=new Image();
+  img.onload=function(){
+    var sc=Math.min(1, maxPx/Math.max(img.width,img.height));
+    var cv=document.createElement('canvas');
+    cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    cv.toBlob(function(b){ URL.revokeObjectURL(url); cb(b); },'image/jpeg',mutu);
+  };
+  img.onerror=function(){ URL.revokeObjectURL(url); cb(null); };
+  img.src=url;
+}
+function onFoto(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  shrinkFoto(f,1400,0.62,function(b){
+    if(!b){ toast('Foto item gagal diproses',true); return; }
+    pendingFoto=b;
+    $('fotoInfo').textContent='✔ Foto item code siap ('+Math.round(b.size/1024)+' KB) — tersimpan saat SIMPAN';
+  });
+  inp.value='';
+}
+function onFotoLoc(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  shrinkFoto(f,1000,0.55,function(b){
+    if(!b){ toast('Foto locator gagal diproses',true); return; }
+    pendingFotoLoc=b;
+    $('fotoLocInfo').textContent='✔ Foto bin locator siap ('+Math.round(b.size/1024)+' KB) — tersimpan saat SIMPAN';
+  });
+  inp.value='';
+}
+function exportFoto(){
+  fotoAll(function(map){
+    var ids=[], k;
+    for(k in map){ if(Object.prototype.hasOwnProperty.call(map,k)) ids.push(k); }
+    if(!ids.length){ toast('Belum ada foto tersimpan',true); return; }
+    var files=[], done=0;
+    function finish(){
+      if(!files.length){ toast('Foto gagal dibaca',true); return; }
+      try{
+        var u8=zipStore(files);
+        var blob=new Blob([u8],{type:'application/zip'});
+        var a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download='FOTO_ITEMCODE_'+(cfg.pic||'PMT').replace(/\s+/g,'_')+'_'+nowParts().tanggal+'.zip';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); },1500);
+        toast('ZIP foto diunduh · '+files.length+' foto');
+      }catch(err){ toast('Gagal membuat ZIP foto',true); console.error(err); }
+    }
+    ids.forEach(function(key){
+      var kind='ITEM', id=key;
+      if(key.indexOf('loc:')===0){ kind='LOC'; id=key.slice(4); }
+      else if(key.indexOf('item:')===0){       id=key.slice(5); }
+      var e=null, i;
+      for(i=0;i<entries.length;i++){ if(entries[i].id===id){ e=entries[i]; break; } }
+      var nm=((e&&e.tanggal)||'nodate')+'_'+(((e&&e.jam)||'').replace(/:/g,''))+'_'+
+             ((e&&(e.rack||e.zone))||'norak')+'_'+((e&&e.locator)||'noloc')+'_'+id+'_'+kind+'.jpg';
+      nm=nm.replace(/[^A-Za-z0-9._-]/g,'-');
+      var fr=new FileReader();
+      fr.onload=function(){
+        files.push({name:nm, data:new Uint8Array(fr.result)});
+        if(++done===ids.length) finish();
+      };
+      fr.onerror=function(){ if(++done===ids.length) finish(); };
+      fr.readAsArrayBuffer(map[key]);
+    });
+  });
 }
 
 /* ---------------- simpan / edit ---------------- */
@@ -841,8 +1114,12 @@ function saveEntry(keep){
   var e=readForm();
   if(e.qty<=0){ toast('Qty harus > 0',true); return; }
   if(e.mode==='INFRA'){
-    var needDim = !!INFRA_NEED_DIM[e.tipe] || (e.tipe==='Bin');
-    if(needDim && e.unitCbm<=0){ toast('Dimensi '+e.tipe.toLowerCase()+' belum lengkap',true); return; }
+    if(isSpace(e.tipe)){
+      if(e.p<=0 || e.l<=0){ toast('Panjang & lebar area belum diisi',true); return; }
+    } else {
+      var needDim = !!INFRA_NEED_DIM[e.tipe] || (e.tipe==='Bin');
+      if(needDim && e.unitCbm<=0){ toast('Dimensi '+e.tipe.toLowerCase()+' belum lengkap',true); return; }
+    }
   } else {
     if(e.unitCbm<=0){ toast('Dimensi belum lengkap',true); return; }
     if(showFill() && e.fill<=0){ toast('% isi harus > 0',true); return; }
@@ -865,6 +1142,10 @@ function saveEntry(keep){
     renderAll(); return;
   }
 
+  if(pendingFoto){ e.hasFoto=1; fotoPut('item:'+e.id,pendingFoto); pendingFoto=null;
+    $('fotoInfo').textContent='Foto item code tersimpan di HP.'; }
+  if(pendingFotoLoc){ e.hasFotoLoc=1; fotoPut('loc:'+e.id,pendingFotoLoc); pendingFotoLoc=null;
+    $('fotoLocInfo').textContent='Foto bin locator tersimpan di HP.'; }
   entries.push(e); lsSet(LS_ENTRIES,entries);
   cfg.lastRack=e.rack;
   if(e.mode==='KARTON') cfg.lastTempat=e.tempat;   /* sekali pilih Pallete, terus Pallete */
@@ -872,7 +1153,12 @@ function saveEntry(keep){
   toast('Tersimpan · '+(e.mode==='INFRA'? (fmtInt(e.qty)+' unit '+e.tipe) : (fmt(e.occCbm,4)+' m³')));
   if(!keep){ $('fNote').value=''; }
   $('fLoc').value='';
+  $('fItemCode').value='';
   $('fQty').value=1;
+  setTimeout(function(){
+    $('fotoInfo').textContent='Kalau kode tidak terbaca, cukup foto. Kode dibaca belakangan dari ZIP foto.';
+    $('fotoLocInfo').textContent='Foto label bin kalau kodenya susah diketik.';
+  },2500);
   renderAll();
 }
 
@@ -894,6 +1180,9 @@ function editEntry(id){
   } else if(e.mode==='NOPACK'){
     var sd=splitDesc(e.isi);
     $('sIsi').value=sd.pilihan||'Lainnya'; $('sNama').value=sd.desc;
+    $('sBerat').value=e.beratKg||'';
+    $('sBinPilih').value=e.binPilih||'AUTO';
+    if(e.alasanNoBin) $('sAlasan').value=e.alasanNoBin;
     $('sP').value=e.p; $('sL').value=e.l; $('sT').value=e.t;
   } else if(e.mode==='KARTON'){
     var kd=splitDesc(e.isi);
@@ -932,7 +1221,10 @@ function cancelEdit(){
 function bumpQty(d){ var v=Math.max(1,num($('fQty').value)+d); $('fQty').value=v; renderCalc(); }
 
 function delEntry(id){
-  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){ entries.splice(i,1); break; } }
+  for(var i=0;i<entries.length;i++){ if(entries[i].id===id){
+    if(entries[i].hasFoto)    fotoDel('item:'+id);
+    if(entries[i].hasFotoLoc) fotoDel('loc:'+id);
+    entries.splice(i,1); break; } }
   if(state.editId===id) cancelEdit();
   lsSet(LS_ENTRIES,entries); renderAll(); toast('Entry dihapus di HP ini');
 }
@@ -940,7 +1232,8 @@ function delEntry(id){
 /* ---------------- agregasi ---------------- */
 function agg(list){
   var a={occ:0,gross:0,nEntry:0,nBin:0,nKarton:0,nSlot:0,
-         rakCbm:0,foot:0,shelf:0,nRak:0,nBinInfra:0,nInfra:0,
+         rakCbm:0,foot:0,shelf:0,nRak:0,nBinInfra:0,nInfra:0,areaM2:0,
+         binSedangNeed:0,binBesarNeed:0,noBinCbm:0,
          byRack:{},byMode:{},byCat:{},byInfra:{}};
   for(var i=0;i<list.length;i++){
     var e=list[i];
@@ -951,13 +1244,19 @@ function agg(list){
       a.nInfra+=e.qty;
       if(j==='Rak'){ a.rakCbm+=e.grossCbm||0; a.foot+=e.footM2||0; a.shelf+=e.shelfM2||0; a.nRak+=e.qty; }
       if(j==='Bin') a.nBinInfra+=e.qty;
+      if(isSpace(j)) a.areaM2+=e.footM2||0;
       continue;
     }
     a.nEntry++;
     a.occ+=e.occCbm; a.gross+=e.grossCbm;
     if(e.mode==='BIN') a.nBin+=e.qty;
     else if(e.mode==='KARTON') a.nKarton+=e.qty;
-    else if(e.mode==='NOPACK') a.nSlot+=e.qty;
+    else if(e.mode==='NOPACK'){
+      a.nSlot+=e.qty;
+      if(e.binFinal==='Bin Sedang')     a.binSedangNeed += num(e.binNeed);
+      else if(e.binFinal==='Bin Besar') a.binBesarNeed  += num(e.binNeed);
+      else if(e.binFinal==='Tidak masuk bin') a.noBinCbm += e.occCbm;
+    }
     var g=grpKey(e);
     a.byRack[g]=(a.byRack[g]||0)+e.occCbm;
     a.byMode[e.mode]=(a.byMode[e.mode]||0)+e.occCbm;
@@ -1098,6 +1397,10 @@ function renderSummary(){
   $('kBinInfra').textContent=fmtInt(a.nBinInfra);
   $('kFoot').textContent=fmt(a.foot,1);
   $('kShelf').textContent=fmt(a.shelf,1);
+  if($('kArea'))     $('kArea').textContent=fmt(a.areaM2,1);
+  if($('kBinNeedS')) $('kBinNeedS').textContent=fmtInt(a.binSedangNeed);
+  if($('kBinNeedL')) $('kBinNeedL').textContent=fmtInt(a.binBesarNeed);
+  if($('kNoBin'))    $('kNoBin').textContent=fmt(a.noBinCbm,3);
   bars($('barZone'),a.byRack,false);
   bars($('barMode'),a.byMode,true);
 
@@ -1412,7 +1715,9 @@ function buildXlsx(sheets){
 
 /* ---------------- export ---------------- */
 var XL_CBM=['tanggal','jam','pic','wh','mode','rak','locator','tempat','tipe','isi',
-            'p','l','t','qty','fill','unitCbm','grossCbm','occCbm','note','id'];
+            'p','l','t','qty','fill','unitCbm','grossCbm','occCbm','note',
+            'itemCode','binFit','binPilih','binFinal','alasanNoBin','beratKg',
+            'qtyPerBin','binNeed','hasFoto','hasFotoLoc','id'];
 var XL_INF=['tanggal','jam','pic','wh','jenis','varian','rak','locator',
             'p','l','t','levels','qty','volM3','footM2','shelfM2','note','id'];
 
@@ -1427,7 +1732,10 @@ function exportXlsx(){
     } else {
       cbm.push([e.tanggal||'', e.jam||'', e.pic, e.wh, e.mode, e.rack||e.zone||'', e.locator||'',
                 e.tempat||'', e.tipe, e.isi||'', num(e.p),num(e.l),num(e.t),num(e.qty),num(e.fill),
-                num(e.unitCbm),num(e.grossCbm),num(e.occCbm), e.note||'', e.id]);
+                num(e.unitCbm),num(e.grossCbm),num(e.occCbm), e.note||'',
+                e.itemCode||'', e.binFit||'', e.binPilih||'', e.binFinal||'', e.alasanNoBin||'',
+                num(e.beratKg), num(e.qtyPerBin), num(e.binNeed),
+                num(e.hasFoto), num(e.hasFotoLoc), e.id]);
     }
   });
   try{
@@ -1493,7 +1801,7 @@ function wipeLocal(){
     });
   }
   ['fRack','fLoc','cP','cL','cT','sP','sL','sT','kP','kL','kT','iP','iL','iT','iLv',
-   'iNama','sNama','kNama','fQty','fFill']
+   'iNama','sNama','kNama','fQty','fFill','fItemCode','sBerat','sBinPilih','sAlasan']
     .forEach(function(id){ var el=$(id); if(el){ el.addEventListener('input',renderCalc); el.addEventListener('change',renderCalc); } });
   ['sIsi','kIsi'].forEach(function(id){
     $(id).addEventListener('change',function(){ syncLainnya(); renderCalc(); });
