@@ -34,7 +34,9 @@ var INFRA_SHEET = 'INFRA_DATA';
 /* Kolom baru SELALU ditambah di AKHIR array, supaya data lama tetap sejajar. */
 var COLS = ['id','ts','pic','wh','mode','zone','rack','tipe','isi',
             'p','l','t','levels','qty','fill','unitCbm','grossCbm','occCbm',
-            'footM2','shelfM2','note','locator','tanggal','jam','tempat'];
+            'footM2','shelfM2','note','locator','tanggal','jam','tempat',
+            'itemCode','binFit','binPilih','binFinal','alasanNoBin','beratKg',
+            'qtyPerBin','binNeed','hasFoto','hasFotoLoc'];
 
 var INFRA_COLS = ['id','ts','tanggal','jam','pic','wh','jenis','varian',
                   'rack','locator','p','l','t','levels','qty',
